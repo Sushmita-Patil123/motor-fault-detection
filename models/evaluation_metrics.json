@@ -1,0 +1,179 @@
+{
+    "best_model": "Support Vector Machine",
+    "test_accuracy": 100.0,
+    "classes": [
+        "Normal",
+        "Overload",
+        "Rotor_Fault",
+        "Single_Phasing",
+        "Stator_Fault",
+        "Under_Voltage",
+        "Voltage_Unbalance"
+    ],
+    "feature_cols": [
+        "voltage",
+        "current_r",
+        "current_y",
+        "current_b",
+        "rpm",
+        "power_input",
+        "power_factor"
+    ],
+    "feature_importances": {
+        "voltage": 20.25,
+        "power_factor": 19.65,
+        "rpm": 17.54,
+        "current_b": 14.62,
+        "power_input": 11.99,
+        "current_r": 8.8,
+        "current_y": 7.16
+    },
+    "classification_report": {
+        "Normal": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 80.0
+        },
+        "Overload": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 70.0
+        },
+        "Rotor_Fault": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 60.0
+        },
+        "Single_Phasing": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 60.0
+        },
+        "Stator_Fault": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 70.0
+        },
+        "Under_Voltage": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 60.0
+        },
+        "Voltage_Unbalance": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 60.0
+        },
+        "accuracy": 1.0,
+        "macro avg": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 460.0
+        },
+        "weighted avg": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 460.0
+        }
+    },
+    "confusion_matrix": [
+        [
+            80,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            70,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            60,
+            0,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            60,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            0,
+            70,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            60,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            60
+        ]
+    ],
+    "comparison": [
+        {
+            "Model": "Random Forest",
+            "Test Accuracy": 99.57,
+            "CV Accuracy (5-Fold)": 98.7,
+            "F1-Score": 99.57
+        },
+        {
+            "Model": "Gradient Boosting",
+            "Test Accuracy": 98.91,
+            "CV Accuracy (5-Fold)": 99.29,
+            "F1-Score": 98.92
+        },
+        {
+            "Model": "Support Vector Machine",
+            "Test Accuracy": 100.0,
+            "CV Accuracy (5-Fold)": 99.95,
+            "F1-Score": 100.0
+        },
+        {
+            "Model": "K-Nearest Neighbors",
+            "Test Accuracy": 99.78,
+            "CV Accuracy (5-Fold)": 99.78,
+            "F1-Score": 99.78
+        }
+    ]
+}

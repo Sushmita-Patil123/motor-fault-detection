@@ -1,0 +1,28 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.venv/
+
+# Logs
+*.log
+
+# Large datasets
+*.npz
+*.mat
+dataset/
+dataset - Copy/
+raw/
+*.xlsx
+
+# Temporary and executable files
+*.vir
+*.VIR
+.DS_Store
+# Large training dataset
+feature_time_48k_2048_load_1.csv
+
+# Unnecessary image
+1.JPG

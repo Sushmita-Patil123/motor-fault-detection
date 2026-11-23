@@ -1,0 +1,5 @@
+Model,Test Accuracy,CV Accuracy (5-Fold),F1-Score
+Random Forest,99.57,98.7,99.57
+Gradient Boosting,98.91,99.29,98.92
+Support Vector Machine,100.0,99.95,100.0
+K-Nearest Neighbors,99.78,99.78,99.78
