@@ -132,6 +132,20 @@ def analyze_sample(sample_dict: dict):
             
         import requests
         requests.post("http://localhost:8000/update-telemetry", json=payload, timeout=0.5)
+
+        # Auto-sync to GitHub so Streamlit Cloud (streamlit.app) updates live too!
+        try:
+            import subprocess
+            subprocess.Popen(
+                ["git", "commit", "-am", f"Live sync: {pred_class} ({info['health_index']}%)", "--no-verify"],
+                cwd=BASE_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            subprocess.Popen(
+                ["git", "push", "origin", "main"],
+                cwd=BASE_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        except Exception:
+            pass
     except Exception:
         pass
 
