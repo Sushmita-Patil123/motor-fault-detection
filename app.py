@@ -174,36 +174,15 @@ def load_trained_artifacts():
 
 model, le, metrics = load_trained_artifacts()
 
-# View Mode: User Interface (Main Points) vs Developer Dashboard (Full Engineering)
-st.sidebar.markdown("### 🖥️ Display Interface View")
-app_view_mode = st.sidebar.radio(
-    "Choose View:",
-    [
-        "👤 User Interface (Health Index & Predictive Maintenance)",
-        "🛠️ Full Developer Diagnostic Dashboard"
-    ],
-    index=0
-)
-
 # App Header
-if app_view_mode.startswith("👤"):
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 24px; border-radius: 12px; margin-bottom: 22px; border: 1px solid #334155;">
-        <h1 style="color: #f8fafc; margin: 0; font-size: 26px;">⚡ 3-Phase Induction Motor — Health & Predictive Maintenance</h1>
-        <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 14px;">
-            Continuous AI Machine Health Monitoring & Predictive Maintenance Prognosis
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 22px 28px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #334155;">
-        <h1 style="color: #f8fafc; margin: 0; font-size: 28px;">⚡ 3-Phase Induction Motor Electrical Fault Detection & Diagnostic Dashboard</h1>
-        <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 15px;">
-            Machine Learning Predictive Maintenance Monitoring: <b>Voltage, 3-Phase Currents (Ir, Iy, Ib), RPM, Active Power Input & Power Factor</b>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 22px 28px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #334155;">
+    <h1 style="color: #f8fafc; margin: 0; font-size: 28px;">⚡ 3-Phase Induction Motor Electrical Fault Detection & Diagnostic Dashboard</h1>
+    <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 15px;">
+        Machine Learning Predictive Maintenance Monitoring: <b>Voltage, 3-Phase Currents (Ir, Iy, Ib), RPM, Active Power Input & Power Factor</b>
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # Auto-refresh so any terminal runs or live updates are detected immediately
 st_autorefresh(interval=1500, key="global_terminal_sync")
@@ -442,282 +421,194 @@ else:
     st.sidebar.caption("💡 User UI connects via `api.py` on port 8000")
 
 
-# ==================== VIEW 1: USER INTERFACE (MAIN POINTS ONLY) ====================
-if app_view_mode.startswith("👤"):
-    if pred_class == "Normal":
-        banner_bg = "linear-gradient(90deg, #065f46 0%, #047857 100%)"
-        banner_border = "#10b981"
-    elif pred_class in ["Stator_Fault", "Single_Phasing"]:
-        banner_bg = "linear-gradient(90deg, #7f1d1d 0%, #991b1b 100%)"
-        banner_border = "#ef4444"
-    else:
-        banner_bg = "linear-gradient(90deg, #78350f 0%, #92400e 100%)"
-        banner_border = "#f59e0b"
-
-    # Status Alarm Banner
-    st.markdown(f"""
-    <div style="background: {banner_bg}; border: 2px solid {banner_border}; border-radius: 12px; padding: 18px 24px; margin-bottom: 22px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div>
-                <span style="font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: #f8fafc; font-weight: 700;">CURRENT MACHINE STATE</span>
-                <h2 style="color: #ffffff; margin: 4px 0 0 0; font-size: 24px;">{diag_info['status_badge']}</h2>
-            </div>
-            <div style="background: rgba(0,0,0,0.3); padding: 8px 18px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);">
-                <span style="font-size: 14px; color: #ffffff; font-weight: 700;">{diag_info.get('urgency', 'Routine Inspection')}</span>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Core 2-Column Section: Health Index Dial & Predictive Maintenance
-    col_u1, col_u2 = st.columns([1, 1.35])
-
-    with col_u1:
-        st.markdown("### 🩺 Motor Health Index")
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=health_idx,
-            number={'suffix': "%", 'font': {'size': 44, 'color': diag_info['status_color']}},
-            gauge={
-                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#94a3b8"},
-                'bar': {'color': diag_info['status_color'], 'thickness': 0.75},
-                'steps': [
-                    {'range': [0, 25], 'color': '#7f1d1d'},
-                    {'range': [25, 50], 'color': '#7c2d12'},
-                    {'range': [50, 75], 'color': '#713f12'},
-                    {'range': [75, 100], 'color': '#064e3b'}
-                ],
-                'threshold': {'line': {'color': "white", 'width': 3}, 'thickness': 0.8, 'value': health_idx}
-            }
-        ))
-        fig_gauge.update_layout(height=240, margin=dict(l=20, r=20, t=20, b=10), paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_gauge, use_container_width=True)
-
-        tag_text = "OPTIMAL HEALTH" if health_idx >= 75 else ("EARLY WARNING" if health_idx >= 50 else ("DEGRADATION ALERT" if health_idx >= 25 else "CRITICAL FAILURE RISK"))
-        st.markdown(f"""
-        <div style="text-align: center; margin-top: -10px; margin-bottom: 12px;">
-            <span style="background: {diag_info['status_color']}22; color: {diag_info['status_color']}; border: 1px solid {diag_info['status_color']}; padding: 6px 18px; border-radius: 20px; font-weight: 800; font-size: 14px; letter-spacing: 0.5px;">
-                {tag_text}
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_u2:
-        st.markdown("### ⏱️ Predictive Maintenance & Prognosis")
-        st.markdown(f"""
-        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px;">Remaining Safe Operating Window</span>
-                <span style="font-size: 18px; font-weight: 800; color: #38bdf8;">{diag_info.get('safe_window', 'Under Observation')}</span>
-            </div>
-            <p style="font-size: 14px; color: #cbd5e1; margin: 0; line-height: 1.5;">{diag_info['prediction']}</p>
-        </div>
-
-        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 14px 20px; margin-bottom: 14px;">
-            <span style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px;">Monitored Component at Risk</span>
-            <div style="font-size: 16px; font-weight: 700; color: #f8fafc; margin-top: 4px;">📍 {diag_info['location']}</div>
-        </div>
-
-        <div style="background: #0f172a; border-left: 5px solid {diag_info['status_color']}; border-radius: 8px; padding: 16px 20px;">
-            <div style="font-size: 12px; color: #38bdf8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px; margin-bottom: 4px;">Recommended Maintenance Action:</div>
-            <div style="font-size: 15px; font-weight: 600; color: #f8fafc; line-height: 1.5;">{diag_info['action']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Main Points Snapshot (Clean, Essential Only)
-    st.markdown("<hr style='border: 1px solid #334155; margin: 20px 0;'>", unsafe_allow_html=True)
-    st.markdown("#### ⚡ Essential Motor Snapshot (Main Points)")
-    s1, s2, s3, s4 = st.columns(4)
-    s1.metric("Line Voltage", f"{v_in:.1f} V")
-    s2.metric("Average Current", f"{i_avg:.2f} A")
-    s3.metric("Rotor Speed", f"{rpm_in:.0f} RPM")
-    s4.metric("Current Balance", f"{unbalance_pct:.1f}%", delta="Unbalanced" if unbalance_pct > 5 else "Nominal", delta_color="inverse" if unbalance_pct > 5 else "normal")
-
-# ==================== VIEW 2: FULL DEVELOPER DIAGNOSTIC DASHBOARD ====================
+# ==================== ROW 1: STATUS ALARM BANNER ====================
+if pred_class == "Normal":
+    banner_bg = "linear-gradient(90deg, #065f46 0%, #047857 100%)"
+    banner_border = "#10b981"
+elif pred_class in ["Stator_Fault", "Single_Phasing"]:
+    banner_bg = "linear-gradient(90deg, #7f1d1d 0%, #991b1b 100%)"
+    banner_border = "#ef4444"
 else:
-    if pred_class == "Normal":
-        banner_bg = "linear-gradient(90deg, #065f46 0%, #047857 100%)"
-        banner_border = "#10b981"
-    elif pred_class in ["Stator_Fault", "Single_Phasing"]:
-        banner_bg = "linear-gradient(90deg, #7f1d1d 0%, #991b1b 100%)"
-        banner_border = "#ef4444"
-    else:
-        banner_bg = "linear-gradient(90deg, #78350f 0%, #92400e 100%)"
-        banner_border = "#f59e0b"
+    banner_bg = "linear-gradient(90deg, #78350f 0%, #92400e 100%)"
+    banner_border = "#f59e0b"
 
-    st.markdown(f"""
-    <div style="background: {banner_bg}; border: 2px solid {banner_border}; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <span style="font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; color: #f8fafc; font-weight: 700;">Diagnostic Classification</span>
-                <h2 style="color: #ffffff; margin: 4px 0 0 0; font-size: 26px;">{diag_info['status_badge']}</h2>
-                <p style="color: #e2e8f0; margin: 6px 0 0 0; font-size: 15px;">Fault Location: <b>{diag_info['location']}</b></p>
-            </div>
-            <div style="text-align: right; background: rgba(0,0,0,0.25); padding: 12px 24px; border-radius: 10px;">
-                <div style="font-size: 13px; color: #cbd5e1; font-weight: 600;">MOTOR HEALTH INDEX</div>
-                <div style="font-size: 34px; font-weight: 800; color: #ffffff;">{health_idx}%</div>
-            </div>
+st.markdown(f"""
+<div style="background: {banner_bg}; border: 2px solid {banner_border}; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <span style="font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; color: #f8fafc; font-weight: 700;">Diagnostic Classification</span>
+            <h2 style="color: #ffffff; margin: 4px 0 0 0; font-size: 26px;">{diag_info['status_badge']}</h2>
+            <p style="color: #e2e8f0; margin: 6px 0 0 0; font-size: 15px;">Fault Location: <b>{diag_info['location']}</b></p>
         </div>
+        <div style="text-align: right; background: rgba(0,0,0,0.25); padding: 12px 24px; border-radius: 10px;">
+            <div style="font-size: 13px; color: #cbd5e1; font-weight: 600;">MOTOR HEALTH INDEX</div>
+            <div style="font-size: 34px; font-weight: 800; color: #ffffff;">{health_idx}%</div>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+if dataset_truth_label:
+    clean_truth = dataset_truth_label.lower().replace('-', '_').strip()
+    clean_pred  = pred_class.lower().replace('-', '_').strip()
+    if clean_truth == clean_pred:
+        st.success(f"🎯 **Dataset Validation:** Row label `{dataset_truth_label}` == Model Prediction `{pred_class}` (100% Accurate Detection!)", icon="✅")
+    else:
+        st.info(f"📊 **Dataset Label Comparison:** Dataset Record: `{dataset_truth_label}` | ML Prediction: `{pred_class}`")
+
+
+# ==================== ROW 2: LIVE METRIC CARDS ====================
+c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
+c1.metric("Line Voltage", f"{v_in:.1f} V", delta=f"{v_in - 415.0:+.1f} V" if abs(v_in - 415.0) > 1 else "Nominal")
+c2.metric("Phase R (Ir)", f"{ir_in:.2f} A", delta=f"{ir_in - i_avg:+.2f} A" if unbalance_pct > 5 else None)
+c3.metric("Phase Y (Iy)", f"{iy_in:.2f} A", delta=f"{iy_in - i_avg:+.2f} A" if unbalance_pct > 5 else None)
+c4.metric("Phase B (Ib)", f"{ib_in:.2f} A", delta=f"{ib_in - i_avg:+.2f} A" if unbalance_pct > 5 else None)
+c5.metric("Motor Speed", f"{rpm_in:.0f} RPM", delta=f"{rpm_in - 1440.0:+.0f} RPM")
+c6.metric("Active Power", f"{pin_in:.0f} W")
+c7.metric("Power Factor", f"{pf_in:.2f}", delta="Low PF" if pf_in < 0.75 else "Optimal", delta_color="inverse" if pf_in < 0.75 else "normal")
+
+st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+# ==================== ROW 3: GAUGES & VISUALS ====================
+col_v1, col_v2, col_v3 = st.columns([1, 1.2, 1.2])
+
+with col_v1:
+    st.subheader("📊 Health & Current Balance")
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=health_idx,
+        number={'suffix': "%", 'font': {'size': 32}},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': diag_info['status_color']},
+            'steps': [
+                {'range': [0, 35], 'color': '#fee2e2'},
+                {'range': [35, 65], 'color': '#fef3c7'},
+                {'range': [65, 85], 'color': '#fef9c3'},
+                {'range': [85, 100], 'color': '#d1fae5'}
+            ],
+            'threshold': {'line': {'color': "black", 'width': 3}, 'thickness': 0.75, 'value': health_idx}
+        }
+    ))
+    fig_gauge.update_layout(height=240, margin=dict(l=20, r=20, t=30, b=20))
+    st.plotly_chart(fig_gauge, use_container_width=True)
+    
+    st.markdown(f"""
+    <div style="background: #1e293b; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #334155;">
+        <span style="font-size: 13px; color: #94a3b8;">Phase Current Unbalance</span>
+        <h3 style="margin: 4px 0 0 0; color: {'#ef4444' if unbalance_pct > 10 else '#10b981'}; font-size: 22px;">{unbalance_pct:.1f}%</h3>
+        <small style="color: #64748b;">(IEEE Threshold: &lt; 5.0% Unbalance)</small>
     </div>
     """, unsafe_allow_html=True)
 
-    if dataset_truth_label:
-        clean_truth = dataset_truth_label.lower().replace('-', '_').strip()
-        clean_pred  = pred_class.lower().replace('-', '_').strip()
-        if clean_truth == clean_pred:
-            st.success(f"🎯 **Dataset Validation:** Row label `{dataset_truth_label}` == Model Prediction `{pred_class}` (100% Accurate Detection!)", icon="✅")
+with col_v2:
+    st.subheader("⚡ 3-Phase Current Distribution")
+    df_curr = pd.DataFrame({
+        'Phase': ['Phase R (Ir)', 'Phase Y (Iy)', 'Phase B (Ib)'],
+        'Current (A)': [ir_in, iy_in, ib_in],
+        'Color': ['#ef4444', '#f59e0b', '#3b82f6']
+    })
+    fig_curr = px.bar(
+        df_curr, x='Phase', y='Current (A)', text='Current (A)',
+        color='Phase', color_discrete_map={'Phase R (Ir)': '#ef4444', 'Phase Y (Iy)': '#f59e0b', 'Phase B (Ib)': '#3b82f6'}
+    )
+    fig_curr.add_hline(y=7.2, line_dash="dash", line_color="red", annotation_text="Rated Full Load: 7.2A")
+    fig_curr.add_hline(y=i_avg, line_dash="dot", line_color="white", annotation_text=f"Avg: {i_avg:.2f}A")
+    fig_curr.update_layout(height=320, showlegend=False, margin=dict(l=20, r=20, t=20, b=20))
+    fig_curr.update_traces(texttemplate='%{text:.2f} A', textposition='outside')
+    st.plotly_chart(fig_curr, use_container_width=True)
+
+with col_v3:
+    st.subheader("🎯 Model Class Probability")
+    df_probs = pd.DataFrame(list(prob_dict.items()), columns=['Fault Class', 'Probability'])
+    df_probs = df_probs.sort_values(by='Probability', ascending=True)
+    fig_prob = px.bar(
+        df_probs, x='Probability', y='Fault Class', orientation='h',
+        text='Probability', color='Probability', color_continuous_scale='Blues'
+    )
+    fig_prob.update_traces(texttemplate='%{text:.1%}', textposition='outside')
+    fig_prob.update_layout(height=320, coloraxis_showscale=False, margin=dict(l=20, r=20, t=20, b=20))
+    st.plotly_chart(fig_prob, use_container_width=True)
+
+# ==================== ROW 4: PREDICTIVE & PRESCRIPTIVE MAINTENANCE ====================
+st.markdown("<hr style='border: 1px solid #334155; margin: 24px 0;'>", unsafe_allow_html=True)
+st.subheader("🛠️ Prescriptive Action & Prognostics")
+
+col_act1, col_act2 = st.columns([1.5, 1])
+
+with col_act1:
+    st.markdown(f"""
+    <div style="background: #1e293b; border-left: 5px solid {diag_info['status_color']}; padding: 18px 22px; border-radius: 8px;">
+        <h4 style="color: #f8fafc; margin-top: 0;">Predicted Degradation & Prognosis</h4>
+        <p style="color: #cbd5e1; font-size: 15px; margin-bottom: 14px;">{diag_info['prediction']}</p>
+        <h4 style="color: #f8fafc; margin-bottom: 6px;">Recommended Engineering Action</h4>
+        <p style="color: #38bdf8; font-size: 16px; font-weight: 600; margin: 0;">{diag_info['action']}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_act2:
+    st.markdown("""
+    <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid #334155;">
+        <h5 style="color: #e2e8f0; margin-top: 0;">Tested Model Specs</h5>
+        <ul style="color: #94a3b8; font-size: 13px; margin: 0; padding-left: 18px; line-height: 1.8;">
+            <li><b>Best Classifier:</b> Support Vector Machine (100.0% Test Acc)</li>
+            <li><b>Random Forest:</b> 99.57% Test Acc, 98.70% 5-Fold CV</li>
+            <li><b>Total Trained Samples:</b> 2,300 Synthetic Lab Runs</li>
+            <li><b>Classes:</b> Normal, Stator, Single Phase, Overload, Under-V, Unbalance, Rotor</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ==================== TABS: DATASET & FEATURE IMPORTANCES ====================
+st.markdown("<hr style='border: 1px solid #334155; margin: 24px 0;'>", unsafe_allow_html=True)
+tab1, tab2, tab3 = st.tabs(["📋 Training Dataset Records", "📈 Feature Importance Ranking", "🏆 Model Comparison Benchmarks"])
+
+with tab1:
+    tab1_choice = st.radio(
+        "Choose Dataset View:", 
+        [
+            "⚡ Excel Sheet 2 (Lab Under-Voltage & Asymmetry)",
+            "🔬 Indoor Lab Readings (Real Experiment)", 
+            "📊 Full Synthetic Dataset (2,300 Records)"
+        ], 
+        horizontal=True
+    )
+    if "Excel Sheet 2" in tab1_choice:
+        sheet2_path = os.path.join(BASE_DIR, "dataset", "excel_sheet2.csv")
+        if os.path.exists(sheet2_path):
+            df_s2 = pd.read_csv(sheet2_path)
+            st.dataframe(df_s2, use_container_width=True)
+            st.caption(f"Showing all {len(df_s2)} experimental records from: `excel sheet2.xlsx`")
         else:
-            st.info(f"📊 **Dataset Label Comparison:** Dataset Record: `{dataset_truth_label}` | ML Prediction: `{pred_class}`")
-
-    # Developer Metric Cards
-    c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
-    c1.metric("Line Voltage", f"{v_in:.1f} V", delta=f"{v_in - 415.0:+.1f} V" if abs(v_in - 415.0) > 1 else "Nominal")
-    c2.metric("Phase R (Ir)", f"{ir_in:.2f} A", delta=f"{ir_in - i_avg:+.2f} A" if unbalance_pct > 5 else None)
-    c3.metric("Phase Y (Iy)", f"{iy_in:.2f} A", delta=f"{iy_in - i_avg:+.2f} A" if unbalance_pct > 5 else None)
-    c4.metric("Phase B (Ib)", f"{ib_in:.2f} A", delta=f"{ib_in - i_avg:+.2f} A" if unbalance_pct > 5 else None)
-    c5.metric("Motor Speed", f"{rpm_in:.0f} RPM", delta=f"{rpm_in - 1440.0:+.0f} RPM")
-    c6.metric("Active Power", f"{pin_in:.0f} W")
-    c7.metric("Power Factor", f"{pf_in:.2f}", delta="Low PF" if pf_in < 0.75 else "Optimal", delta_color="inverse" if pf_in < 0.75 else "normal")
-
-    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-
-    col_v1, col_v2, col_v3 = st.columns([1, 1.2, 1.2])
-
-    with col_v1:
-        st.subheader("📊 Health & Current Balance")
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=health_idx,
-            number={'suffix': "%", 'font': {'size': 32}},
-            gauge={
-                'axis': {'range': [0, 100]},
-                'bar': {'color': diag_info['status_color']},
-                'steps': [
-                    {'range': [0, 35], 'color': '#fee2e2'},
-                    {'range': [35, 65], 'color': '#fef3c7'},
-                    {'range': [65, 85], 'color': '#fef9c3'},
-                    {'range': [85, 100], 'color': '#d1fae5'}
-                ],
-                'threshold': {'line': {'color': "black", 'width': 3}, 'thickness': 0.75, 'value': health_idx}
-            }
-        ))
-        fig_gauge.update_layout(height=240, margin=dict(l=20, r=20, t=30, b=20))
-        st.plotly_chart(fig_gauge, use_container_width=True)
-        
-        st.markdown(f"""
-        <div style="background: #1e293b; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #334155;">
-            <span style="font-size: 13px; color: #94a3b8;">Phase Current Unbalance</span>
-            <h3 style="margin: 4px 0 0 0; color: {'#ef4444' if unbalance_pct > 10 else '#10b981'}; font-size: 22px;">{unbalance_pct:.1f}%</h3>
-            <small style="color: #64748b;">(IEEE Threshold: &lt; 5.0% Unbalance)</small>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_v2:
-        st.subheader("⚡ 3-Phase Current Distribution")
-        df_curr = pd.DataFrame({
-            'Phase': ['Phase R (Ir)', 'Phase Y (Iy)', 'Phase B (Ib)'],
-            'Current (A)': [ir_in, iy_in, ib_in],
-            'Color': ['#ef4444', '#f59e0b', '#3b82f6']
-        })
-        fig_curr = px.bar(
-            df_curr, x='Phase', y='Current (A)', text='Current (A)',
-            color='Phase', color_discrete_map={'Phase R (Ir)': '#ef4444', 'Phase Y (Iy)': '#f59e0b', 'Phase B (Ib)': '#3b82f6'}
-        )
-        fig_curr.add_hline(y=7.2, line_dash="dash", line_color="red", annotation_text="Rated Full Load: 7.2A")
-        fig_curr.add_hline(y=i_avg, line_dash="dot", line_color="white", annotation_text=f"Avg: {i_avg:.2f}A")
-        fig_curr.update_layout(height=320, showlegend=False, margin=dict(l=20, r=20, t=20, b=20))
-        fig_curr.update_traces(texttemplate='%{text:.2f} A', textposition='outside')
-        st.plotly_chart(fig_curr, use_container_width=True)
-
-    with col_v3:
-        st.subheader("🎯 Model Class Probability")
-        df_probs = pd.DataFrame(list(prob_dict.items()), columns=['Fault Class', 'Probability'])
-        df_probs = df_probs.sort_values(by='Probability', ascending=True)
-        fig_prob = px.bar(
-            df_probs, x='Probability', y='Fault Class', orientation='h',
-            text='Probability', color='Probability', color_continuous_scale='Blues'
-        )
-        fig_prob.update_traces(texttemplate='%{text:.1%}', textposition='outside')
-        fig_prob.update_layout(height=320, coloraxis_showscale=False, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig_prob, use_container_width=True)
-
-    st.markdown("<hr style='border: 1px solid #334155; margin: 24px 0;'>", unsafe_allow_html=True)
-    st.subheader("🛠️ Prescriptive Action & Prognostics")
-
-    col_act1, col_act2 = st.columns([1.5, 1])
-
-    with col_act1:
-        st.markdown(f"""
-        <div style="background: #1e293b; border-left: 5px solid {diag_info['status_color']}; padding: 18px 22px; border-radius: 8px;">
-            <h4 style="color: #f8fafc; margin-top: 0;">Predicted Degradation & Prognosis</h4>
-            <p style="color: #cbd5e1; font-size: 15px; margin-bottom: 14px;">{diag_info['prediction']}</p>
-            <h4 style="color: #f8fafc; margin-bottom: 6px;">Recommended Engineering Action</h4>
-            <p style="color: #38bdf8; font-size: 16px; font-weight: 600; margin: 0;">{diag_info['action']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_act2:
-        st.markdown("""
-        <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid #334155;">
-            <h5 style="color: #e2e8f0; margin-top: 0;">Tested Model Specs</h5>
-            <ul style="color: #94a3b8; font-size: 13px; margin: 0; padding-left: 18px; line-height: 1.8;">
-                <li><b>Best Classifier:</b> Support Vector Machine (100.0% Test Acc)</li>
-                <li><b>Random Forest:</b> 99.57% Test Acc, 98.70% 5-Fold CV</li>
-                <li><b>Total Trained Samples:</b> 2,300 Synthetic Lab Runs</li>
-                <li><b>Classes:</b> Normal, Stator, Single Phase, Overload, Under-V, Unbalance, Rotor</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<hr style='border: 1px solid #334155; margin: 24px 0;'>", unsafe_allow_html=True)
-    tab1, tab2, tab3 = st.tabs(["📋 Training Dataset Records", "📈 Feature Importance Ranking", "🏆 Model Comparison Benchmarks"])
-
-    with tab1:
-        tab1_choice = st.radio(
-            "Choose Dataset View:", 
-            [
-                "⚡ Excel Sheet 2 (Lab Under-Voltage & Asymmetry)",
-                "🔬 Indoor Lab Readings (Real Experiment)", 
-                "📊 Full Synthetic Dataset (2,300 Records)"
-            ], 
-            horizontal=True
-        )
-        if "Excel Sheet 2" in tab1_choice:
-            sheet2_path = os.path.join(BASE_DIR, "dataset", "excel_sheet2.csv")
-            if os.path.exists(sheet2_path):
-                df_s2 = pd.read_csv(sheet2_path)
-                st.dataframe(df_s2, use_container_width=True)
-                st.caption(f"Showing all {len(df_s2)} experimental records from: `excel sheet2.xlsx`")
-            else:
-                st.warning("Excel sheet 2 dataset file not found.")
-        elif "Indoor Lab Readings" in tab1_choice:
-            lab_csv_path = os.path.join(BASE_DIR, "dataset", "indoor_lab_readings.csv")
-            if os.path.exists(lab_csv_path):
-                df_lab = pd.read_csv(lab_csv_path)
-                st.dataframe(df_lab, use_container_width=True)
-                st.caption(f"Showing all {len(df_lab)} experimental records from: `indoor_lab_readings.xlsx`")
-            else:
-                st.warning("Indoor lab readings file not found.")
+            st.warning("Excel sheet 2 dataset file not found.")
+    elif "Indoor Lab Readings" in tab1_choice:
+        lab_csv_path = os.path.join(BASE_DIR, "dataset", "indoor_lab_readings.csv")
+        if os.path.exists(lab_csv_path):
+            df_lab = pd.read_csv(lab_csv_path)
+            st.dataframe(df_lab, use_container_width=True)
+            st.caption(f"Showing all {len(df_lab)} experimental records from: `indoor_lab_readings.xlsx`")
         else:
-            if os.path.exists(DATASET_PATH):
-                df_display = pd.read_csv(DATASET_PATH)
-                st.dataframe(df_display.head(100), use_container_width=True)
-                st.caption(f"Showing 100 of {len(df_display):,} records from: `{os.path.basename(DATASET_PATH)}`")
-            else:
-                st.warning("Dataset file not found.")
-
-
-    with tab2:
-        if metrics and "feature_importances" in metrics:
-            df_imp = pd.DataFrame(list(metrics["feature_importances"].items()), columns=['Parameter', 'Importance (%)'])
-            df_imp = df_imp.sort_values(by='Importance (%)', ascending=True)
-            fig_imp = px.bar(df_imp, x='Importance (%)', y='Parameter', orientation='h', color='Importance (%)', color_continuous_scale='Teal')
-            fig_imp.update_layout(height=350)
-            st.plotly_chart(fig_imp, use_container_width=True)
+            st.warning("Indoor lab readings file not found.")
+    else:
+        if os.path.exists(DATASET_PATH):
+            df_display = pd.read_csv(DATASET_PATH)
+            st.dataframe(df_display.head(100), use_container_width=True)
+            st.caption(f"Showing 100 of {len(df_display):,} records from: `{os.path.basename(DATASET_PATH)}`")
         else:
-            st.info("Feature importance metrics not loaded.")
+            st.warning("Dataset file not found.")
 
-    with tab3:
-        if metrics and "comparison" in metrics:
-            df_comp = pd.DataFrame(metrics["comparison"])
-            st.table(df_comp)
+
+with tab2:
+    if metrics and "feature_importances" in metrics:
+        df_imp = pd.DataFrame(list(metrics["feature_importances"].items()), columns=['Parameter', 'Importance (%)'])
+        df_imp = df_imp.sort_values(by='Importance (%)', ascending=True)
+        fig_imp = px.bar(df_imp, x='Importance (%)', y='Parameter', orientation='h', color='Importance (%)', color_continuous_scale='Teal')
+        fig_imp.update_layout(height=350)
+        st.plotly_chart(fig_imp, use_container_width=True)
+    else:
+        st.info("Feature importance metrics not loaded.")
+
+with tab3:
+    if metrics and "comparison" in metrics:
+        df_comp = pd.DataFrame(metrics["comparison"])
+        st.table(df_comp)
