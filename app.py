@@ -290,13 +290,26 @@ elif input_mode == "📁 Load from Dataset CSV":
         selected_row = df_csv.iloc[row_idx]
         ds_sig = f"ds_{dataset_choice}_{row_idx}"
         
-        defaults["voltage"]      = float(selected_row.get("voltage", 415.0))
-        defaults["current_r"]    = float(selected_row.get("current_r", 5.25))
-        defaults["current_y"]    = float(selected_row.get("current_y", 5.20))
-        defaults["current_b"]    = float(selected_row.get("current_b", 5.28))
-        defaults["rpm"]          = float(selected_row.get("rpm", 1445.0))
-        defaults["power_input"]  = float(selected_row.get("power_input", 3180.0))
-        defaults["power_factor"] = float(selected_row.get("power_factor", 0.85))
+        # Smart Auto-Mapping for arbitrary uploaded CSV or Excel column headers
+        def get_col_val(candidates, default_val):
+            for c in candidates:
+                for col_name in selected_row.index:
+                    if c.lower() in str(col_name).lower():
+                        try:
+                            v = float(selected_row[col_name])
+                            if not np.isnan(v):
+                                return v
+                        except Exception:
+                            pass
+            return default_val
+
+        defaults["voltage"]      = get_col_val(["voltage", "vry", "v_avg", "v (v)", "volt"], 415.0)
+        defaults["current_r"]    = get_col_val(["current_r", "ir", "i_r", "phase r"], 5.25)
+        defaults["current_y"]    = get_col_val(["current_y", "iy", "i_y", "phase y"], 5.20)
+        defaults["current_b"]    = get_col_val(["current_b", "ib", "i_b", "phase b"], 5.28)
+        defaults["rpm"]          = get_col_val(["rpm", "speed"], 1445.0)
+        defaults["power_input"]  = get_col_val(["power_input", "power input", "power", "pin", "w1+w2"], 3180.0)
+        defaults["power_factor"] = get_col_val(["power_factor", "power factor", "pf", "cos"], 0.85)
 
         if st.session_state.get("last_applied_sig") != ds_sig:
             st.session_state["slider_voltage"]      = float(np.clip(defaults["voltage"], 300.0, 480.0))
