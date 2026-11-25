@@ -3,52 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Motor Health Monitor</title>
+  <title>Induction Motor — Health & Predictive Maintenance</title>
   <style>
-    /* ── Reset & Base ───────────────────────────────────── */
+    /* ── Reset & Color System ────────────────────────────── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0d1117;
-      --card:      #161b22;
-      --border:    #30363d;
-      --text:      #e6edf3;
-      --muted:     #8b949e;
-      --green:     #00C851;
-      --yellow:    #FFBB33;
-      --orange:    #FF8800;
-      --red:       #FF4444;
-      --dark-red:  #CC0000;
-      --blue:      #58a6ff;
+      --bg:          #0b0f17;
+      --card-bg:     #131a26;
+      --card-border: #212c3d;
+      --text-main:   #f1f5f9;
+      --text-sub:    #94a3b8;
+      --green:       #10b981;
+      --yellow:      #eab308;
+      --orange:      #f97316;
+      --red:         #ef4444;
+      --blue:        #38bdf8;
     }
 
     body {
       background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ── Header ─────────────────────────────────────────── */
     header {
-      background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #006064 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border-bottom: 1px solid var(--card-border);
       padding: 16px 24px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
 
-    .header-left h1 {
-      font-size: 1.3rem;
+    .header-title h1 {
+      font-size: 1.25rem;
       font-weight: 700;
-      letter-spacing: 0.5px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .header-left p {
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.7);
-      margin-top: 2px;
+
+    .header-title p {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      margin-top: 3px;
     }
 
     .header-right {
@@ -57,811 +62,628 @@
       gap: 12px;
     }
 
-    .live-dot {
-      width: 10px; height: 10px;
+    .status-badge-live {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--green);
-      animation: pulse 1.5s infinite;
+      animation: pulse 1.8s infinite;
     }
+
     @keyframes pulse {
-      0%,100% { opacity: 1; transform: scale(1); }
-      50%      { opacity: 0.4; transform: scale(1.3); }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.3; transform: scale(1.3); }
     }
 
-    .refresh-badge {
-      font-size: 0.72rem;
-      color: rgba(255,255,255,0.7);
-    }
-
-    /* ── Alert Banner ────────────────────────────────────── */
-    #alert-banner {
-      padding: 14px 24px;
-      text-align: center;
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      transition: background 0.5s, color 0.5s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    /* ── Main Grid ───────────────────────────────────────── */
-    main {
-      padding: 20px 24px;
-      display: grid;
-      gap: 20px;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto auto auto;
-    }
-
-    @media (max-width: 1100px) {
-      main { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 700px) {
-      main { grid-template-columns: 1fr; }
-    }
-
-    /* ── Card Base ───────────────────────────────────────── */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-    }
-
-    .card-title {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin-bottom: 14px;
-    }
-
-    /* ── Health Gauge ────────────────────────────────────── */
-    .gauge-card {
-      grid-column: span 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .gauge-wrap {
-      position: relative;
-      width: 180px;
-      height: 100px;
-      margin-top: 10px;
-    }
-
-    .gauge-svg { width: 180px; height: 100px; overflow: visible; }
-
-    #gauge-arc-bg {
-      fill: none;
-      stroke: #2d333b;
-      stroke-width: 16;
-      stroke-linecap: round;
-    }
-    #gauge-arc-fill {
-      fill: none;
-      stroke-width: 16;
-      stroke-linecap: round;
-      transition: stroke-dasharray 0.6s ease, stroke 0.5s ease;
-    }
-
-    .gauge-value {
-      position: absolute;
-      bottom: -8px;
-      width: 100%;
-      text-align: center;
-      font-size: 2.4rem;
-      font-weight: 800;
-      transition: color 0.5s;
-    }
-    .gauge-label {
-      font-size: 0.72rem;
-      color: var(--muted);
-      text-align: center;
-      margin-top: 24px;
-    }
-
-    /* ── Fault Status Card ───────────────────────────────── */
-    .fault-card {
-      grid-column: span 1;
-    }
-
-    .fault-name {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-top: 4px;
-      transition: color 0.5s;
-    }
-
-    .fault-location {
-      font-size: 0.82rem;
-      color: var(--muted);
-      margin-top: 6px;
-    }
-
-    .severity-badge {
-      display: inline-block;
-      padding: 4px 14px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-      margin-top: 10px;
-      transition: background 0.5s, color 0.5s;
-    }
-
-    /* ── Action Card ─────────────────────────────────────── */
-    .action-card {
-      grid-column: span 1;
-    }
-
-    .action-text {
-      font-size: 0.88rem;
-      line-height: 1.6;
-      color: #cdd9e5;
-      margin-top: 4px;
-      border-left: 3px solid var(--blue);
-      padding-left: 12px;
-      transition: border-color 0.5s;
-    }
-
-    /* ── Sensor Metrics Row ───────────────────────────────── */
-    .metrics-row {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 12px;
-    }
-
-    @media (max-width: 1100px) {
-      .metrics-row { grid-template-columns: repeat(4, 1fr); }
-    }
-    @media (max-width: 700px) {
-      .metrics-row { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    .metric-mini {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 10px;
-      text-align: center;
-    }
-
-    .metric-mini .icon { font-size: 1.3rem; }
-    .metric-mini .val  { font-size: 1.3rem; font-weight: 700; margin: 4px 0 2px; }
-    .metric-mini .lbl  { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-
-    /* ── Chart Section ───────────────────────────────────── */
-    .chart-card {
-      grid-column: span 2;
-    }
-
-    @media (max-width: 700px) {
-      .chart-card { grid-column: span 1; }
-    }
-
-    .bar-chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      height: 100px;
-      margin-top: 12px;
-      padding: 0 4px;
-    }
-
-    .bar-group {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .bar {
-      width: 100%;
-      border-radius: 4px 4px 0 0;
-      transition: height 0.6s ease, background 0.5s;
-      min-height: 4px;
-    }
-
-    .bar-label {
-      font-size: 0.6rem;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    /* ── Probability Card ────────────────────────────────── */
-    .prob-card {
-      grid-column: span 1;
-    }
-
-    .prob-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 7px;
-    }
-
-    .prob-label { font-size: 0.72rem; width: 130px; color: var(--muted); flex-shrink: 0; }
-    .prob-bar-bg { flex: 1; height: 8px; background: #2d333b; border-radius: 4px; overflow: hidden; }
-    .prob-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease, background 0.5s; }
-    .prob-pct { font-size: 0.72rem; width: 36px; text-align: right; }
-
-    /* ── Input Panel ─────────────────────────────────────── */
-    .input-card {
-      grid-column: 1 / -1;
-    }
-
-    .input-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr) auto;
-      gap: 10px;
-      margin-top: 12px;
-      align-items: end;
-    }
-
-    @media (max-width: 1100px) {
-      .input-grid { grid-template-columns: repeat(4, 1fr); }
-    }
-    @media (max-width: 700px) {
-      .input-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    .input-group label {
-      display: block;
-      font-size: 0.65rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 5px;
-    }
-
-    .input-group input {
-      width: 100%;
-      background: #0d1117;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      padding: 7px 10px;
-      font-size: 0.85rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .input-group input:focus {
-      border-color: var(--blue);
-    }
-
-    .btn-predict {
-      background: linear-gradient(135deg, #1976D2, #0d47a1);
+    .btn-phone {
+      background: #2563eb;
       color: #fff;
       border: none;
+      padding: 6px 14px;
       border-radius: 8px;
-      padding: 9px 20px;
-      font-size: 0.88rem;
+      font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
-      white-space: nowrap;
-      transition: opacity 0.2s, transform 0.1s;
+      transition: background 0.2s;
     }
+    .btn-phone:hover { background: #1d4ed8; }
 
-    .btn-predict:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-predict:active { transform: translateY(0); }
-
-    /* ── Preset Buttons ──────────────────────────────────── */
-    .presets {
+    /* ── Main Container ──────────────────────────────────── */
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 20px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
     }
 
-    .preset-btn {
-      padding: 5px 14px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
+    /* ── Top Diagnostic Banner ────────────────────────────── */
+    #diagnostic-banner {
+      background: linear-gradient(90deg, #065f46 0%, #047857 100%);
+      border: 1px solid var(--green);
+      border-radius: 14px;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      transition: all 0.4s ease;
+    }
+
+    .banner-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .banner-icon {
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .banner-info .sub {
       font-size: 0.72rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: rgba(255,255,255,0.85);
+      font-weight: 700;
     }
 
-    .preset-btn:hover { background: var(--border); color: var(--text); }
+    .banner-info .main-state {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-top: 2px;
+    }
+
+    .urgency-pill {
+      background: rgba(0,0,0,0.3);
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(255,255,255,0.2);
+      white-space: nowrap;
+    }
+
+    /* ── Core Two-Column Section ─────────────────────────── */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 860px) {
+      .hero-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card Styling ────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-sub);
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── 1. Health Index Gauge Card ──────────────────────── */
+    .health-gauge-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .gauge-container {
+      position: relative;
+      width: 220px;
+      height: 125px;
+      margin: 10px 0 6px 0;
+    }
+
+    .gauge-svg {
+      width: 220px;
+      height: 125px;
+      overflow: visible;
+    }
+
+    .gauge-bg-path {
+      fill: none;
+      stroke: #1e293b;
+      stroke-width: 18;
+      stroke-linecap: round;
+    }
+
+    .gauge-fill-path {
+      fill: none;
+      stroke: var(--green);
+      stroke-width: 18;
+      stroke-linecap: round;
+      stroke-dasharray: 282;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.8s ease, stroke 0.5s ease;
+    }
+
+    .gauge-inner-text {
+      position: absolute;
+      bottom: -6px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .health-score {
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: var(--green);
+      line-height: 1;
+      transition: color 0.5s ease;
+    }
+
+    .health-state-tag {
+      margin-top: 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 5px 16px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+      border: 1px solid var(--green);
+      letter-spacing: 0.5px;
+    }
+
+    .health-range-bar {
+      margin-top: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-sub);
+      padding: 0 8px;
+      border-top: 1px solid #1e293b;
+      padding-top: 12px;
+    }
+
+    /* ── 2. Predictive Maintenance Card ──────────────────── */
+    .prognosis-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .info-block {
+      background: #0d1420;
+      border: 1px solid #1b2638;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .info-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-sub);
+      font-weight: 700;
+    }
+
+    .prognosis-window-badge {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    .prognosis-text {
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: #e2e8f0;
+      margin-top: 4px;
+    }
+
+    .location-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    /* ── 3. Recommended Action Card ──────────────────────── */
+    .action-container {
+      background: #0d1420;
+      border-left: 5px solid var(--blue);
+      border-radius: 10px;
+      padding: 18px 20px;
+      transition: border-color 0.4s ease;
+    }
+
+    .action-lead {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--blue);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .action-detail {
+      font-size: 1.05rem;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #f8fafc;
+    }
+
+    /* ── 4. Main Points Quick Sensor Snapshot ────────────── */
+    .snapshot-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 700px) {
+      .snapshot-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .snap-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .snap-item .lbl {
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .snap-item .val {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-top: 4px;
+    }
 
     /* ── Footer ──────────────────────────────────────────── */
     footer {
       text-align: center;
-      padding: 16px;
-      font-size: 0.72rem;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      margin-top: 10px;
-    }
-
-    /* ── Unbalance Indicator ─────────────────────────────── */
-    .unbalance-val {
-      font-size: 1.8rem;
-      font-weight: 800;
-      margin-top: 4px;
-    }
-
-    .unbalance-status {
+      padding: 18px;
       font-size: 0.75rem;
-      margin-top: 4px;
+      color: var(--text-sub);
+      border-top: 1px solid var(--card-border);
+      background: #090d14;
     }
 
-    /* ── Last Update Time ─────────────────────────────────── */
-    #last-update {
-      font-size: 0.65rem;
-      color: rgba(255,255,255,0.5);
-    }
-
-    /* ── Connection Error ─────────────────────────────────── */
-    #conn-error {
+    /* ── Phone Modal ─────────────────────────────────────── */
+    #phone-modal {
       display: none;
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #FF4444;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      z-index: 999;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+      max-width: 440px;
+      width: 90%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
     }
   </style>
 </head>
 <body>
 
-<!-- ══ Header ══════════════════════════════════════════════ -->
-<header>
-  <div class="header-left">
-    <h1>⚡ 3-Phase Induction Motor — Live Health Monitor</h1>
-    <p>Real-time Fault Detection & Predictive Maintenance Dashboard</p>
-  </div>
-  <div class="header-right">
-    <div id="stream-status-pill" style="display:flex; align-items:center; gap:6px; background:#1f6feb22; border:1px solid #1f6feb; border-radius:20px; padding:4px 10px; font-size:0.75rem; cursor:pointer;" onclick="toggleLiveStream()">
-      <div class="live-dot" id="live-indicator"></div>
-      <span id="stream-btn-text">Live Sync: ACTIVE</span>
+  <!-- ══ Header ══════════════════════════════════════════════ -->
+  <header>
+    <div class="header-title">
+      <h1>⚡ 3-Phase Induction Motor — Health Monitor</h1>
+      <p>Continuous AI Health Index & Predictive Maintenance Prognosis</p>
     </div>
-    <button onclick="showNetworkInfo()" style="background:#238636; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-      📱 Open on Phone
-    </button>
-    <span id="last-update">—</span>
-  </div>
-
-</header>
-
-<!-- ══ Alert Banner ════════════════════════════════════════ -->
-<div id="alert-banner">
-  <span id="alert-icon">⏳</span>
-  <span id="alert-text">Connecting to motor…</span>
-</div>
-
-<!-- ══ Main Grid ════════════════════════════════════════════ -->
-<main>
-
-  <!-- Health Gauge -->
-  <div class="card gauge-card">
-    <div class="card-title">🩺 Health Index</div>
-    <div class="gauge-wrap">
-      <svg class="gauge-svg" viewBox="0 0 180 100">
-        <!-- Background arc: half circle -->
-        <path id="gauge-arc-bg"
-          d="M 20 90 A 70 70 0 0 1 160 90"
-          stroke="#2d333b" fill="none" stroke-width="16" stroke-linecap="round"/>
-        <!-- Filled arc -->
-        <path id="gauge-arc-fill"
-          d="M 20 90 A 70 70 0 0 1 160 90"
-          fill="none" stroke="#00C851" stroke-width="16" stroke-linecap="round"
-          stroke-dasharray="220" stroke-dashoffset="220"/>
-      </svg>
-      <div class="gauge-value" id="gauge-value" style="color: var(--green)">—</div>
-    </div>
-    <div class="gauge-label">0% = Critical &nbsp;|&nbsp; 100% = Healthy</div>
-  </div>
-
-  <!-- Fault Status -->
-  <div class="card fault-card">
-    <div class="card-title">🔍 Fault Status</div>
-    <div class="fault-name" id="fault-name">—</div>
-    <div class="fault-location" id="fault-location">📍 Location: —</div>
-    <div>
-      <span class="severity-badge" id="severity-badge">—</span>
-    </div>
-  </div>
-
-  <!-- Recommended Action -->
-  <div class="card action-card">
-    <div class="card-title">🛠 Recommended Action</div>
-    <div class="action-text" id="action-text">Waiting for prediction…</div>
-  </div>
-
-  <!-- Sensor Metrics -->
-  <div class="metrics-row">
-    <div class="metric-mini">
-      <div class="icon">⚡</div>
-      <div class="val" id="m-voltage">—</div>
-      <div class="lbl">Voltage (V)</div>
-    </div>
-    <div class="metric-mini">
-      <div class="icon">🔴</div>
-      <div class="val" id="m-ir">—</div>
-      <div class="lbl">Phase R (A)</div>
-    </div>
-    <div class="metric-mini">
-      <div class="icon">🟡</div>
-      <div class="val" id="m-iy">—</div>
-      <div class="lbl">Phase Y (A)</div>
-    </div>
-    <div class="metric-mini">
-      <div class="icon">🔵</div>
-      <div class="val" id="m-ib">—</div>
-      <div class="lbl">Phase B (A)</div>
-    </div>
-    <div class="metric-mini">
-      <div class="icon">🌀</div>
-      <div class="val" id="m-rpm">—</div>
-      <div class="lbl">Speed (RPM)</div>
-    </div>
-    <div class="metric-mini">
-      <div class="icon">⚙️</div>
-      <div class="val" id="m-power">—</div>
-      <div class="lbl">Power (W)</div>
-    </div>
-    <div class="metric-mini">
-      <div class="icon">📊</div>
-      <div class="val" id="m-pf">—</div>
-      <div class="lbl">Power Factor</div>
-    </div>
-  </div>
-
-  <!-- 3-Phase Current Chart -->
-  <div class="card chart-card">
-    <div class="card-title">📈 3-Phase Current (A) &nbsp;|&nbsp; <span style="color:var(--muted); font-size:0.68rem;" id="unbalance-info">Unbalance: —</span></div>
-    <div class="bar-chart">
-      <div class="bar-group">
-        <div class="bar" id="bar-r" style="height:40px; background:#ef5350;"></div>
-        <div class="bar-label">Phase R</div>
+    <div class="header-right">
+      <div class="status-badge-live">
+        <div class="pulse-dot"></div>
+        <span id="live-sync-text">LIVE SYNC ACTIVE</span>
       </div>
-      <div class="bar-group">
-        <div class="bar" id="bar-y" style="height:40px; background:#FDD835;"></div>
-        <div class="bar-label">Phase Y</div>
-      </div>
-      <div class="bar-group">
-        <div class="bar" id="bar-b" style="height:40px; background:#42A5F5;"></div>
-        <div class="bar-label">Phase B</div>
-      </div>
+      <button class="btn-phone" onclick="openPhoneModal()">📱 Open on Phone</button>
     </div>
-  </div>
+  </header>
 
-  <!-- Fault Probability -->
-  <div class="card prob-card">
-    <div class="card-title">📊 Fault Probability (%)</div>
-    <div id="prob-container">
-      <div style="color:var(--muted); font-size:0.8rem;">Waiting for data…</div>
-    </div>
-  </div>
+  <!-- ══ Main Container ══════════════════════════════════════ -->
+  <div class="container">
 
-  <!-- Input Panel -->
-  <div class="card input-card">
-    <div class="card-title">🎛 Manual Sensor Input &nbsp;—&nbsp; Enter values and click Predict</div>
-    <div class="input-grid">
-      <div class="input-group">
-        <label>Voltage (V)</label>
-        <input type="number" id="in-voltage" value="415" step="1" min="0" max="600"/>
+    <!-- 1. Diagnostic Status Banner -->
+    <div id="diagnostic-banner">
+      <div class="banner-left">
+        <span class="banner-icon" id="banner-icon">🟢</span>
+        <div class="banner-info">
+          <div class="sub">Current Machine Status</div>
+          <div class="main-state" id="banner-state">NORMAL OPERATION (HEALTHY)</div>
+        </div>
       </div>
-      <div class="input-group">
-        <label>Phase R (A)</label>
-        <input type="number" id="in-ir" value="7.2" step="0.1" min="0" max="20"/>
-      </div>
-      <div class="input-group">
-        <label>Phase Y (A)</label>
-        <input type="number" id="in-iy" value="7.2" step="0.1" min="0" max="20"/>
-      </div>
-      <div class="input-group">
-        <label>Phase B (A)</label>
-        <input type="number" id="in-ib" value="7.2" step="0.1" min="0" max="20"/>
-      </div>
-      <div class="input-group">
-        <label>RPM</label>
-        <input type="number" id="in-rpm" value="1440" step="10" min="0" max="3000"/>
-      </div>
-      <div class="input-group">
-        <label>Power (W)</label>
-        <input type="number" id="in-power" value="3700" step="100" min="0" max="10000"/>
-      </div>
-      <div class="input-group">
-        <label>Power Factor</label>
-        <input type="number" id="in-pf" value="0.85" step="0.01" min="0" max="1"/>
-      </div>
-      <button class="btn-predict" onclick="manualPredict()">▶ Predict</button>
+      <div class="urgency-pill" id="urgency-badge">Routine Inspection Only</div>
     </div>
 
-    <!-- Fault Presets -->
-    <div class="presets">
-      <span style="font-size:0.68rem; color:var(--muted); align-self:center;">Presets:</span>
-      <button class="preset-btn" onclick="loadPreset('normal')">✅ Normal</button>
-      <button class="preset-btn" onclick="loadPreset('stator')">🚨 Stator Fault</button>
-      <button class="preset-btn" onclick="loadPreset('single')">🚨 Single Phasing</button>
-      <button class="preset-btn" onclick="loadPreset('unbalance')">⚠️ Voltage Unbalance</button>
-      <button class="preset-btn" onclick="loadPreset('overload')">🔴 Overload</button>
-      <button class="preset-btn" onclick="loadPreset('undervolt')">⚠️ Under Voltage</button>
-      <button class="preset-btn" onclick="loadPreset('rotor')">⚠️ Rotor Fault</button>
-    </div>
-  </div>
+    <!-- 2. Core Section: Health Index & Predictive Maintenance -->
+    <div class="hero-grid">
 
-</main>
-
-<footer>
-  3-Phase Induction Motor Fault Detection System &nbsp;|&nbsp;
-  Motor: 3.7 kW, 415 V, 50 Hz, 1440 RPM &nbsp;|&nbsp;
-  Model: SVM (Accuracy: 100%) &nbsp;|&nbsp;
-  API: <span id="api-url">http://localhost:8000</span>
-</footer>
-
-<!-- ══ Network Info Modal ══════════════════════════════════ -->
-<div id="net-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center;">
-  <div style="background:#161b22; border:1px solid #30363d; border-radius:12px; padding:24px; max-width:440px; width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.8);">
-    <h3 style="margin-bottom:12px; color:#58a6ff;">📱 Open on Any Phone or Laptop</h3>
-    <p style="font-size:0.85rem; color:#8b949e; line-height:1.5; margin-bottom:16px;">
-      Ensure your phone or tablet is connected to the <b>same Wi-Fi</b> (or mobile hotspot) as this computer. Open your phone's browser and type:
-    </p>
-    <div style="background:#0d1117; border:1px dashed #58a6ff; border-radius:8px; padding:12px; text-align:center; font-family:monospace; font-size:1.15rem; color:#00C851; font-weight:700; word-break:break-all;" id="network-url-display">
-      http://10.213.202.67:8000
-    </div>
-    <p style="font-size:0.75rem; color:#8b949e; margin-top:14px; line-height:1.4;">
-      💡 <b>Tip:</b> If it doesn't open, verify Windows Defender Firewall allows Python on Private networks, or use your phone's personal hotspot!
-    </p>
-    <div style="text-align:right; margin-top:18px;">
-      <button onclick="closeNetworkInfo()" style="background:#238636; color:#fff; border:none; padding:8px 18px; border-radius:6px; cursor:pointer; font-weight:600;">Got it!</button>
-    </div>
-  </div>
-</div>
-
-<div id="conn-error">⚠️ Cannot connect to API. Is the server running?</div>
-
-<!-- ══ Script ══════════════════════════════════════════════ -->
-<script>
-  // Dynamically resolve API server address (works from localhost or any network device)
-  const API = (window.location.origin && window.location.origin.startsWith('http')) 
-    ? window.location.origin 
-    : 'http://localhost:8000';
-
-  let isStreaming = true;
-  let streamTimer = null;
-  let serverIp = 'localhost';
-
-  // ── Network Modal Controls ─────────────────────────────
-  function showNetworkInfo() {
-    document.getElementById('net-modal').style.display = 'flex';
-  }
-  function closeNetworkInfo() {
-    document.getElementById('net-modal').style.display = 'none';
-  }
-
-  // ── Live Stream Toggle ─────────────────────────────────
-  function toggleLiveStream() {
-    isStreaming = !isStreaming;
-    const dot = document.getElementById('live-indicator');
-    const text = document.getElementById('stream-btn-text');
-    if (isStreaming) {
-      dot.style.background = 'var(--green)';
-      dot.style.animation = 'pulse 1.5s infinite';
-      text.textContent = 'Live Sync: ACTIVE';
-      if (!streamTimer) streamTimer = setInterval(pollLiveTelemetry, 1000);
-    } else {
-      dot.style.background = '#8b949e';
-      dot.style.animation = 'none';
-      text.textContent = 'Live Sync: PAUSED';
-      if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
-    }
-  }
-
-  // ── Poll Live Telemetry from Dashboard / Model ──────────
-  async function pollLiveTelemetry() {
-    if (!isStreaming) return;
-    try {
-      const res = await fetch(`${API}/live-telemetry`);
-      const data = await res.json();
-      if (data && data.inputs) {
-        // Sync the input fields so user sees the exact parameters set by dashboard
-        const activeEl = document.activeElement;
-        const isEditing = activeEl && activeEl.tagName === 'INPUT';
-        if (!isEditing) {
-          document.getElementById('in-voltage').value = data.inputs.voltage;
-          document.getElementById('in-ir').value      = data.inputs.current_r;
-          document.getElementById('in-iy').value      = data.inputs.current_y;
-          document.getElementById('in-ib').value      = data.inputs.current_b;
-          document.getElementById('in-rpm').value     = data.inputs.rpm;
-          document.getElementById('in-power').value   = data.inputs.power_input;
-          document.getElementById('in-pf').value      = data.inputs.power_factor;
-        }
-
-        updateUI(data);
-        document.getElementById('conn-error').style.display = 'none';
-      }
-    } catch (e) {
-      document.getElementById('conn-error').style.display = 'block';
-    }
-  }
-
-  // ── Fault Presets (Synchronized with Developer Dashboard) ─
-  const PRESETS = {
-    normal:    { voltage:415.0, ir:5.25, iy:5.20, ib:5.28, rpm:1445, power:3180, pf:0.85 },
-    stator:    { voltage:412.0, ir:8.85, iy:5.15, ib:5.20, rpm:1415, power:3850, pf:0.72 },
-    single:    { voltage:408.0, ir:9.60, iy:9.55, ib:0.00, rpm:1320, power:3650, pf:0.61 },
-    unbalance: { voltage:402.0, ir:6.80, iy:5.20, ib:4.25, rpm:1425, power:3250, pf:0.76 },
-    overload:  { voltage:412.0, ir:8.10, iy:8.05, ib:8.15, rpm:1365, power:4550, pf:0.88 },
-    undervolt: { voltage:355.0, ir:6.30, iy:6.25, ib:6.35, rpm:1410, power:3050, pf:0.79 },
-    rotor:     { voltage:415.0, ir:6.20, iy:5.10, ib:5.85, rpm:1420, power:3400, pf:0.74 },
-  };
-
-
-  function loadPreset(key) {
-    const p = PRESETS[key];
-    document.getElementById('in-voltage').value = p.voltage;
-    document.getElementById('in-ir').value      = p.ir;
-    document.getElementById('in-iy').value      = p.iy;
-    document.getElementById('in-ib').value      = p.ib;
-    document.getElementById('in-rpm').value     = p.rpm;
-    document.getElementById('in-power').value   = p.power;
-    document.getElementById('in-pf').value      = p.pf;
-    manualPredict();
-  }
-
-
-  // ── Send Prediction Request ────────────────────────────
-  function manualPredict() {
-    const body = {
-      voltage:      parseFloat(document.getElementById('in-voltage').value),
-      current_r:    parseFloat(document.getElementById('in-ir').value),
-      current_y:    parseFloat(document.getElementById('in-iy').value),
-      current_b:    parseFloat(document.getElementById('in-ib').value),
-      rpm:          parseFloat(document.getElementById('in-rpm').value),
-      power_input:  parseFloat(document.getElementById('in-power').value),
-      power_factor: parseFloat(document.getElementById('in-pf').value),
-    };
-    fetchPrediction(body);
-  }
-
-  async function fetchPrediction(body) {
-    try {
-      const res  = await fetch(`${API}/predict`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      updateUI(data);
-      document.getElementById('conn-error').style.display = 'none';
-    } catch (e) {
-      document.getElementById('conn-error').style.display = 'block';
-      console.error('API error:', e);
-    }
-  }
-
-  // ── Update All UI Elements ─────────────────────────────
-  function updateUI(d) {
-    const color = d.color || '#58a6ff';
-
-    // Alert Banner
-    const banner = document.getElementById('alert-banner');
-    banner.style.background = color;
-    banner.style.color = '#fff';
-    document.getElementById('alert-icon').textContent = d.icon || '❓';
-    
-    const bannerText = (d.severity && d.severity.includes(':'))
-      ? d.severity
-      : `Machine Status: ${d.fault.replace(/_/g,' ')} — ${d.severity}`;
-    document.getElementById('alert-text').textContent = bannerText;
-
-
-    // Health Gauge
-    const hi = d.health_index;
-    const totalArc = 220;
-    const filled   = (hi / 100) * totalArc;
-    const offset   = totalArc - filled;
-    const arc      = document.getElementById('gauge-arc-fill');
-    arc.style.strokeDashoffset = offset;
-    arc.style.stroke           = color;
-    const gv = document.getElementById('gauge-value');
-    gv.textContent  = hi + '%';
-    gv.style.color  = color;
-
-    // Fault Status
-    document.getElementById('fault-name').textContent   = d.fault.replace(/_/g,' ');
-    document.getElementById('fault-name').style.color   = color;
-    document.getElementById('fault-location').textContent = '📍 ' + d.location;
-
-    const badge = document.getElementById('severity-badge');
-    badge.textContent = d.severity;
-    badge.style.background = color + '33';
-    badge.style.color      = color;
-    badge.style.border     = `1px solid ${color}`;
-
-    // Action
-    const at = document.getElementById('action-text');
-    at.textContent        = d.action;
-    at.style.borderColor  = color;
-
-    // Sensor Metrics
-    const inp = d.inputs;
-    document.getElementById('m-voltage').textContent = inp.voltage.toFixed(1);
-    document.getElementById('m-ir').textContent      = inp.current_r.toFixed(2);
-    document.getElementById('m-iy').textContent      = inp.current_y.toFixed(2);
-    document.getElementById('m-ib').textContent      = inp.current_b.toFixed(2);
-    document.getElementById('m-rpm').textContent     = Math.round(inp.rpm);
-    document.getElementById('m-power').textContent   = Math.round(inp.power_input);
-    document.getElementById('m-pf').textContent      = inp.power_factor.toFixed(3);
-
-    // Bar Chart
-    const maxCurrent = Math.max(inp.current_r, inp.current_y, inp.current_b, 1);
-    const scale = 90;
-    document.getElementById('bar-r').style.height = ((inp.current_r / maxCurrent) * scale) + 'px';
-    document.getElementById('bar-y').style.height = ((inp.current_y / maxCurrent) * scale) + 'px';
-    document.getElementById('bar-b').style.height = ((inp.current_b / maxCurrent) * scale) + 'px';
-
-    // Unbalance
-    const ub = d.current_unbalance;
-    const ubColor = ub < 2 ? '#00C851' : ub < 5 ? '#FF8800' : '#FF4444';
-    document.getElementById('unbalance-info').textContent =
-      `Current Unbalance: ${ub.toFixed(2)}%`;
-    document.getElementById('unbalance-info').style.color = ubColor;
-
-    // Probability Bars
-    const pc = document.getElementById('prob-container');
-    pc.innerHTML = '';
-    const probs = d.probabilities;
-    const sorted = Object.entries(probs).sort((a,b)=>b[1]-a[1]);
-    sorted.forEach(([cls, pct]) => {
-      const isTop = cls === d.fault;
-      const barColor = isTop ? color : '#30363d';
-      pc.innerHTML += `
-        <div class="prob-row">
-          <div class="prob-label">${cls.replace(/_/g,' ')}</div>
-          <div class="prob-bar-bg">
-            <div class="prob-bar-fill" style="width:${pct}%; background:${barColor};"></div>
+      <!-- HERO 1: Health Index Gauge -->
+      <div class="card health-gauge-card">
+        <div class="card-label">🩺 Motor Health Index</div>
+        <div class="gauge-container">
+          <svg class="gauge-svg" viewBox="0 0 220 125">
+            <path class="gauge-bg-path" d="M 25 110 A 85 85 0 0 1 195 110"/>
+            <path class="gauge-fill-path" id="gauge-fill" d="M 25 110 A 85 85 0 0 1 195 110"/>
+          </svg>
+          <div class="gauge-inner-text">
+            <div class="health-score" id="health-value">100%</div>
           </div>
-          <div class="prob-pct" style="color:${isTop ? color : 'var(--muted)'}">${pct.toFixed(1)}%</div>
-        </div>`;
-    });
+        </div>
+        <div class="health-state-tag" id="health-tag">OPTIMAL HEALTH</div>
+        <div class="health-range-bar">
+          <span style="color:#ef4444">0-25% Critical</span>
+          <span style="color:#f97316">25-50% Alert</span>
+          <span style="color:#eab308">50-75% Warning</span>
+          <span style="color:#10b981">75-100% Good</span>
+        </div>
+      </div>
 
-    // Timestamp
-    const now = new Date();
-    document.getElementById('last-update').textContent =
-      'Last update: ' + now.toLocaleTimeString();
-  }
+      <!-- HERO 2: Predictive Maintenance & Degradation Window -->
+      <div class="card prognosis-card">
+        <div>
+          <div class="card-label">⏱️ Predictive Maintenance & Prognosis</div>
+          <div class="info-block">
+            <div class="info-header">
+              <span class="info-title">Remaining Safe Operating Window</span>
+              <span class="prognosis-window-badge" id="safe-window">> 2,000 Hours (Safe)</span>
+            </div>
+            <p class="prognosis-text" id="prognosis-desc">
+              Motor operating within normal electrical and thermal limits. Safe continuous operation.
+            </p>
+          </div>
+        </div>
 
-  // ── Fetch Server IP for phone display ──────────────────
-  async function initNetworkInfo() {
-    try {
-      const res = await fetch(`${API}/system-info`);
-      const data = await res.json();
-      if (data && data.network_url) {
-        document.getElementById('network-url-display').textContent = data.network_url;
-      } else if (data && data.local_ip) {
-        document.getElementById('network-url-display').textContent = `http://${data.local_ip}:8000`;
+        <div class="info-block" style="margin-top:-6px;">
+          <div class="info-title">📍 Monitored Component / Risk Location</div>
+          <div class="location-box">
+            <span style="font-size:1.2rem;">⚙️</span>
+            <span id="fault-location-text">Motor Windings & Grid Healthy</span>
+          </div>
+        </div>
+
+        <!-- Recommended Action Card -->
+        <div class="action-container" id="action-box">
+          <div class="action-lead">🛠️ Recommended Maintenance Action:</div>
+          <div class="action-detail" id="action-text">
+            Motor operating within normal electrical and thermal limits. Continue regular operation schedule.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. Main Points: Essential Motor Snapshot (Clean, No Clutter) -->
+    <div class="snapshot-row">
+      <div class="snap-item">
+        <div class="lbl">Supply Line Voltage</div>
+        <div class="val" id="val-voltage">415.0 V</div>
+      </div>
+      <div class="snap-item">
+        <div class="lbl">Average Current</div>
+        <div class="val" id="val-current">5.24 A</div>
+      </div>
+      <div class="snap-item">
+        <div class="lbl">Rotor Speed</div>
+        <div class="val" id="val-rpm">1445 RPM</div>
+      </div>
+      <div class="snap-item">
+        <div class="lbl">Current Balance</div>
+        <div class="val" id="val-balance">0.5% (Nominal)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ Footer ══════════════════════════════════════════════ -->
+  <footer>
+    3-Phase Squirrel Cage Induction Motor (3.7 kW / 415 V / 50 Hz) &nbsp;|&nbsp;
+    AI Model: SVM (100% Accuracy) &nbsp;|&nbsp;
+    <span id="update-timestamp">Last sync: Just now</span>
+  </footer>
+
+  <!-- ══ Phone Connection Modal ═════════════════════════════ -->
+  <div id="phone-modal">
+    <div class="modal-box">
+      <h3 style="color:#38bdf8; margin-bottom:8px;">📱 Open on Any Phone</h3>
+      <p style="font-size:0.85rem; color:var(--text-sub); line-height:1.5; margin-bottom:14px;">
+        To view this Predictive Maintenance interface on your phone:
+      </p>
+      <div style="background:#090d14; border:1px dashed #38bdf8; border-radius:8px; padding:12px; text-align:center; font-family:monospace; font-size:1.05rem; color:var(--green); font-weight:700; word-break:break-all;" id="phone-url-display">
+        https://c5e9c74f776e5b.app.lhr.life
+      </div>
+      <p style="font-size:0.75rem; color:var(--text-sub); margin-top:12px; line-height:1.4;">
+        💡 Works anywhere on 4G, 5G, or Wi-Fi. Syncs in real-time with the machine!
+      </p>
+      <div style="text-align:right; margin-top:18px;">
+        <button onclick="closePhoneModal()" style="background:#2563eb; color:#fff; border:none; padding:8px 18px; border-radius:6px; cursor:pointer; font-weight:600;">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Live Synchronization Script ════════════════════════ -->
+  <script>
+    const API = (window.location.origin && window.location.origin.startsWith('http')) 
+      ? window.location.origin 
+      : 'http://localhost:8000';
+
+    function openPhoneModal() {
+      document.getElementById('phone-modal').style.display = 'flex';
+    }
+    function closePhoneModal() {
+      document.getElementById('phone-modal').style.display = 'none';
+    }
+
+    async function pollTelemetry() {
+      try {
+        const res = await fetch(`${API}/live-telemetry`);
+        if (!res.ok) return;
+        const d = await res.json();
+        updateUI(d);
+      } catch (err) {
+        document.getElementById('live-sync-text').textContent = 'OFFLINE / RECONNECTING';
+        document.getElementById('live-sync-text').style.color = '#ef4444';
       }
-    } catch(e) {}
-    document.getElementById('api-url').textContent = API;
-  }
+    }
 
-  // ── Init ───────────────────────────────────────────────
-  window.onload = function() {
-    pollLiveTelemetry();
-    initNetworkInfo();
-    streamTimer = setInterval(pollLiveTelemetry, 1000); // Poll live state every 1s
-  };
+    function updateUI(d) {
+      document.getElementById('live-sync-text').textContent = 'LIVE SYNC ACTIVE';
+      document.getElementById('live-sync-text').style.color = 'var(--green)';
 
-</script>
+      const color = d.color || '#10b981';
+      const fault = d.fault || 'Normal';
+      const hi = Math.round(d.health_index != null ? d.health_index : 100);
 
+      // 1. Top Banner
+      const banner = document.getElementById('diagnostic-banner');
+      if (hi >= 75) {
+        banner.style.background = 'linear-gradient(90deg, #065f46 0%, #047857 100%)';
+        banner.style.borderColor = '#10b981';
+      } else if (hi >= 50) {
+        banner.style.background = 'linear-gradient(90deg, #78350f 0%, #92400e 100%)';
+        banner.style.borderColor = '#eab308';
+      } else if (hi >= 25) {
+        banner.style.background = 'linear-gradient(90deg, #831843 0%, #9a3412 100%)';
+        banner.style.borderColor = '#f97316';
+      } else {
+        banner.style.background = 'linear-gradient(90deg, #7f1d1d 0%, #991b1b 100%)';
+        banner.style.borderColor = '#ef4444';
+      }
 
+      document.getElementById('banner-icon').textContent = d.icon || (hi > 75 ? '🟢' : hi > 40 ? '🟠' : '🔴');
+      
+      const cleanFault = fault.replace(/_/g, ' ').toUpperCase();
+      document.getElementById('banner-state').textContent = d.severity && d.severity.includes(':') 
+        ? d.severity.toUpperCase() 
+        : cleanFault + (hi === 100 ? ' (HEALTHY)' : ' DETECTED');
+
+      document.getElementById('urgency-badge').textContent = d.urgency || (hi > 75 ? 'Routine Inspection Only' : hi > 40 ? 'Prompt Attention Required' : 'Immediate Shutdown Required');
+
+      // 2. Health Index Gauge
+      document.getElementById('health-value').textContent = hi + '%';
+      document.getElementById('health-value').style.color = color;
+
+      // Arc calculation (arc length = 282)
+      const totalArc = 282;
+      const filled = (hi / 100) * totalArc;
+      const offset = totalArc - filled;
+      const fillPath = document.getElementById('gauge-fill');
+      fillPath.style.strokeDashoffset = offset;
+      fillPath.style.stroke = color;
+
+      // Tag
+      const tag = document.getElementById('health-tag');
+      if (hi >= 80) {
+        tag.textContent = 'OPTIMAL HEALTH';
+        tag.style.background = 'rgba(16, 185, 129, 0.15)';
+        tag.style.color = '#10b981';
+        tag.style.borderColor = '#10b981';
+      } else if (hi >= 60) {
+        tag.textContent = 'EARLY WARNING';
+        tag.style.background = 'rgba(234, 179, 8, 0.15)';
+        tag.style.color = '#eab308';
+        tag.style.borderColor = '#eab308';
+      } else if (hi >= 35) {
+        tag.textContent = 'DEGRADATION ALERT';
+        tag.style.background = 'rgba(249, 115, 22, 0.15)';
+        tag.style.color = '#f97316';
+        tag.style.borderColor = '#f97316';
+      } else {
+        tag.textContent = 'CRITICAL RISK';
+        tag.style.background = 'rgba(239, 68, 68, 0.15)';
+        tag.style.color = '#ef4444';
+        tag.style.borderColor = '#ef4444';
+      }
+
+      // 3. Predictive Maintenance & Prognosis
+      document.getElementById('safe-window').textContent = d.remaining_window || (hi > 75 ? '> 2,000 Hours (Safe)' : hi > 40 ? '~100 - 250 Hours' : '< 40 Hours');
+      document.getElementById('safe-window').style.color = color;
+
+      document.getElementById('prognosis-desc').textContent = d.prognosis || 'Motor operating within normal parameters.';
+      document.getElementById('fault-location-text').textContent = d.location || 'Motor Windings & Grid Healthy';
+
+      // Action Box
+      const actionBox = document.getElementById('action-box');
+      actionBox.style.borderLeftColor = color;
+      document.getElementById('action-text').textContent = d.action || 'Continue normal scheduled operation.';
+
+      // 4. Clean Snapshot Values (Main Points)
+      if (d.inputs) {
+        document.getElementById('val-voltage').textContent = (d.inputs.voltage || 415.0).toFixed(1) + ' V';
+        const avgI = ((d.inputs.current_r + d.inputs.current_y + d.inputs.current_b) / 3.0) || 5.24;
+        document.getElementById('val-current').textContent = avgI.toFixed(2) + ' A';
+        document.getElementById('val-rpm').textContent = Math.round(d.inputs.rpm || 1445) + ' RPM';
+        const ub = d.current_unbalance || 0.0;
+        document.getElementById('val-balance').textContent = ub.toFixed(1) + '% ' + (ub > 5 ? '⚠️ Unbalanced' : '✅ Balanced');
+        document.getElementById('val-balance').style.color = ub > 5 ? '#f97316' : '#10b981';
+      }
+
+      document.getElementById('update-timestamp').textContent = 'Last sync: ' + new Date().toLocaleTimeString();
+    }
+
+    // Auto-poll live telemetry every 1 second
+    setInterval(pollTelemetry, 1000);
+    pollTelemetry();
+  </script>
 </body>
 </html>

@@ -90,6 +90,36 @@ ICONS = {
 }
 
 
+PROGNOSIS = {
+    "Normal":           "Motor operating within normal electrical and thermal limits (Safe continuous operation).",
+    "Under_Voltage":    "Excessive current drawn to satisfy constant mechanical torque demand. Risk of gradual thermal degradation within 500-1000 operating hours.",
+    "Voltage_Unbalance":"Elevated negative-sequence currents causing supplementary heating (~300-600 operating hours).",
+    "Overload":         "Excessive thermal rise risking accelerated winding degradation within 100-250 hours.",
+    "Rotor_Fault":      "Broken rotor bar or eccentricity sidebands detected; likely to deteriorate within 200-500 hours.",
+    "Stator_Fault":     "High risk of inter-turn short circuit progressing to ground fault within < 40 hours.",
+    "Single_Phasing":   "Motor drawing extreme unbalanced current; thermal burnout imminent in < 20 minutes.",
+}
+
+REMAINING_WINDOW = {
+    "Normal":           "> 2,000 Hours (Safe)",
+    "Under_Voltage":    "~500 - 1,000 Hours (Warning)",
+    "Voltage_Unbalance":"~300 - 600 Hours (Alert)",
+    "Overload":         "~100 - 250 Hours (Alert)",
+    "Rotor_Fault":      "~200 - 500 Hours (Alert)",
+    "Stator_Fault":     "< 40 Hours (Critical)",
+    "Single_Phasing":   "< 20 Minutes (Emergency)",
+}
+
+URGENCY = {
+    "Normal":           "Routine Inspection Only",
+    "Under_Voltage":    "Schedule Electrical Service",
+    "Voltage_Unbalance":"Schedule Grid & Supply Check",
+    "Overload":         "Prompt Mechanical Attention",
+    "Rotor_Fault":      "Plan Rotor Inspection Shutdown",
+    "Stator_Fault":     "Immediate Machine Shutdown Required",
+    "Single_Phasing":   "EMERGENCY: Trip Breaker Immediately",
+}
+
 # ─── App Setup ────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="Induction Motor Fault Detection API",
@@ -124,6 +154,10 @@ class MotorReading(BaseModel):
     location:     str | None = None
     action:       str | None = None
     severity:     str | None = None
+    prediction:   str | None = None
+    prognosis:    str | None = None
+    remaining_window: str | None = None
+    urgency:      str | None = None
     current_unbalance: float | None = None
     probabilities: dict | None = None
 
@@ -143,7 +177,10 @@ _shared_state = {
     "color": "#00C851",
     "icon": "✅",
     "location": "Motor Windings & Grid Healthy",
-    "action": "Motor is healthy. Continue normal operation. Schedule next inspection in 30 days.",
+    "action": "Motor is operating normally within electrical and thermal limits. Continue regular operation schedule.",
+    "prognosis": "Safe continuous operation. Motor operating within rated electrical and thermal limits (> 2,000+ operating hours).",
+    "remaining_window": "> 2,000 Hours (Safe)",
+    "urgency": "Routine Inspection Only",
     "current_unbalance": 0.5,
     "probabilities": {"Normal": 100.0},
     "inputs": {
@@ -191,6 +228,9 @@ def compute_prediction_result(reading: MotorReading):
         "icon":            ICONS.get(fault_label, "❓"),
         "location":        LOCATION.get(fault_label, "Unknown"),
         "action":          ACTIONS.get(fault_label, "Contact engineer."),
+        "prognosis":       PROGNOSIS.get(fault_label, "Abnormal operating parameters detected."),
+        "remaining_window": REMAINING_WINDOW.get(fault_label, "Under Observation"),
+        "urgency":         URGENCY.get(fault_label, "Inspection Recommended"),
         "current_unbalance": unbalance,
         "probabilities":   prob_map,
         "inputs": {
@@ -262,6 +302,14 @@ def update_telemetry(reading: MotorReading):
         result["action"] = reading.action
     if reading.severity is not None:
         result["severity"] = reading.severity
+    if reading.prediction is not None:
+        result["prognosis"] = reading.prediction
+    if reading.prognosis is not None:
+        result["prognosis"] = reading.prognosis
+    if reading.remaining_window is not None:
+        result["remaining_window"] = reading.remaining_window
+    if reading.urgency is not None:
+        result["urgency"] = reading.urgency
     if reading.current_unbalance is not None:
         result["current_unbalance"] = reading.current_unbalance
     if reading.probabilities is not None:
