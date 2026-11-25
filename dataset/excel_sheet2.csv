@@ -1,0 +1,8 @@
+voltage,current_r,current_y,current_b,rpm,power_input,power_factor,voltage_unbalance_pct,current_unbalance_pct,load_current_il,predicted_fault,confidence_pct
+398.9,6.5,6.5,6.8,1450.0,3648.0,0.8,2.1,3.0,7.77,Normal,95.7
+393.3,5.5,6.6,7.0,1447.0,3461.0,0.798,2.7,9.9,7.77,Normal,75.7
+391.0,5.4,6.7,7.2,1445.0,3481.1,0.799,3.8,11.9,7.77,Normal,59.3
+388.5,5.1,6.8,7.4,1443.0,3458.9,0.799,4.7,15.0,7.77,Under_Voltage,42.1
+387.8,4.9,7.0,7.6,1449.0,3488.4,0.799,5.4,16.9,7.77,Under_Voltage,41.7
+383.7,4.8,7.1,7.8,1443.0,3486.9,0.799,7.4,18.8,7.71,Under_Voltage,65.8
+376.7,4.1,7.3,8.2,1438.0,3405.9,0.799,8.3,25.5,7.65,Under_Voltage,84.0

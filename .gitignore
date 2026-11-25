@@ -13,6 +13,9 @@ venv/
 *.npz
 *.mat
 dataset/
+!dataset/
+dataset/*
+!dataset/*.csv
 dataset - Copy/
 raw/
 *.xlsx

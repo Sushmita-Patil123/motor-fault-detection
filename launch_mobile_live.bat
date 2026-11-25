@@ -22,5 +22,5 @@ echo   Open the HTTPS link shown below on ANY mobile phone (4G/5G/Data)!
 echo ======================================================================
 echo.
 
-ssh -o StrictHostKeyChecking=no -R 80:localhost:8000 nokey@localhost.run
+ssh -o StrictHostKeyChecking=no -R 80:127.0.0.1:8000 nokey@localhost.run
 pause

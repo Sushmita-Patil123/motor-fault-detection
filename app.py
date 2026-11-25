@@ -170,10 +170,29 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Auto-refresh so any terminal runs or live updates are detected immediately
+st_autorefresh(interval=1500, key="global_terminal_sync")
+
 # Sidebar Controls
 st.sidebar.header("⚙️ Motor Parameter Controls")
 
-# Input Mode: Live Terminal Sync / Preset OR Dataset Row Selection
+# Initialize session state for sliders
+for param, val in [
+    ("voltage", 415.0),
+    ("current_r", 5.25),
+    ("current_y", 5.20),
+    ("current_b", 5.28),
+    ("rpm", 1445.0),
+    ("power_input", 3180.0),
+    ("power_factor", 0.85)
+]:
+    if f"slider_{param}" not in st.session_state:
+        st.session_state[f"slider_{param}"] = val
+
+if "last_applied_sig" not in st.session_state:
+    st.session_state["last_applied_sig"] = None
+
+# Input Mode: Live Terminal Sync / Dataset / Preset
 input_mode = st.sidebar.radio(
     "Input Source Mode:",
     ["⚡ Live Terminal & Code Sync", "📁 Load from Dataset CSV", "🎛️ Simulation Presets"],
@@ -181,24 +200,24 @@ input_mode = st.sidebar.radio(
 )
 
 defaults = {
-    "voltage": 415.0,
-    "current_r": 5.25,
-    "current_y": 5.20,
-    "current_b": 5.28,
-    "rpm": 1445.0,
-    "power_input": 3180.0,
-    "power_factor": 0.85
+    "voltage": float(st.session_state.get("slider_voltage", 415.0)),
+    "current_r": float(st.session_state.get("slider_current_r", 5.25)),
+    "current_y": float(st.session_state.get("slider_current_y", 5.20)),
+    "current_b": float(st.session_state.get("slider_current_b", 5.28)),
+    "rpm": float(st.session_state.get("slider_rpm", 1445.0)),
+    "power_input": float(st.session_state.get("slider_power_input", 3180.0)),
+    "power_factor": float(st.session_state.get("slider_power_factor", 0.85))
 }
 dataset_truth_label = None
 
 if input_mode == "⚡ Live Terminal & Code Sync":
-    # Automatically polls every 1.5 seconds for new terminal runs or script predictions
-    st_autorefresh(interval=1500, key="terminal_watcher")
     latest_file = os.path.join(MODELS_DIR, "latest_terminal_prediction.json")
     if os.path.exists(latest_file):
         try:
             with open(latest_file, 'r') as f:
                 t_data = json.load(f)
+            t_sig = f"terminal_{t_data.get('timestamp')}"
+            
             defaults["voltage"]      = float(t_data.get("voltage", 415.0))
             defaults["current_r"]    = float(t_data.get("current_r", 5.25))
             defaults["current_y"]    = float(t_data.get("current_y", 5.20))
@@ -207,7 +226,17 @@ if input_mode == "⚡ Live Terminal & Code Sync":
             defaults["power_input"]  = float(t_data.get("power_input", 3180.0))
             defaults["power_factor"] = float(t_data.get("power_factor", 0.85))
             
-            st.sidebar.success(f"🟢 **Terminal Run:** {t_data.get('fault')} ({t_data.get('health_index')}%)", icon="⚡")
+            if st.session_state.get("last_applied_sig") != t_sig:
+                st.session_state["slider_voltage"]      = float(np.clip(defaults["voltage"], 300.0, 480.0))
+                st.session_state["slider_current_r"]    = float(np.clip(defaults["current_r"], 0.0, 25.0))
+                st.session_state["slider_current_y"]    = float(np.clip(defaults["current_y"], 0.0, 25.0))
+                st.session_state["slider_current_b"]    = float(np.clip(defaults["current_b"], 0.0, 25.0))
+                st.session_state["slider_rpm"]          = float(np.clip(defaults["rpm"], 0.0, 1500.0))
+                st.session_state["slider_power_input"]  = float(np.clip(defaults["power_input"], 0.0, 8000.0))
+                st.session_state["slider_power_factor"] = float(np.clip(defaults["power_factor"], 0.20, 1.00))
+                st.session_state["last_applied_sig"]    = t_sig
+
+            st.sidebar.success(f"🟢 **Terminal Run Active:** {t_data.get('fault')} ({t_data.get('health_index')}%)", icon="⚡")
             st.sidebar.caption("Run any code or `prediction.py` in terminal and this dashboard updates live!")
         except Exception:
             pass
@@ -216,6 +245,7 @@ elif input_mode == "📁 Load from Dataset CSV":
     dataset_choice = st.sidebar.selectbox(
         "Select Saved Dataset:",
         [
+            "⚡ excel_sheet2.csv (Lab Under-Voltage & Asymmetry - 7 samples)",
             "🔬 indoor_lab_readings.csv (Real Lab Readings - 10 samples)",
             "📊 induction_motor_electrical_dataset.csv (2,300 records)"
         ]
@@ -228,7 +258,9 @@ elif input_mode == "📁 Load from Dataset CSV":
             df_csv = pd.read_csv(uploaded_file)
         st.sidebar.caption(f"Loaded: `{uploaded_file.name}` ({len(df_csv)} records)")
     else:
-        if "indoor_lab_readings" in dataset_choice:
+        if "excel_sheet2" in dataset_choice:
+            chosen_path = os.path.join(BASE_DIR, "dataset", "excel_sheet2.csv")
+        elif "indoor_lab_readings" in dataset_choice:
             chosen_path = os.path.join(BASE_DIR, "dataset", "indoor_lab_readings.csv")
         else:
             chosen_path = DATASET_PATH
@@ -239,10 +271,10 @@ elif input_mode == "📁 Load from Dataset CSV":
         else:
             df_csv = None
 
-
     if df_csv is not None and len(df_csv) > 0:
         row_idx = st.sidebar.slider("Select Sample Row #:", 0, len(df_csv) - 1, 0)
         selected_row = df_csv.iloc[row_idx]
+        ds_sig = f"ds_{dataset_choice}_{row_idx}"
         
         defaults["voltage"]      = float(selected_row.get("voltage", 415.0))
         defaults["current_r"]    = float(selected_row.get("current_r", 5.25))
@@ -252,7 +284,17 @@ elif input_mode == "📁 Load from Dataset CSV":
         defaults["power_input"]  = float(selected_row.get("power_input", 3180.0))
         defaults["power_factor"] = float(selected_row.get("power_factor", 0.85))
 
-        for col_name in ['fault', 'fault_type', 'label', 'target']:
+        if st.session_state.get("last_applied_sig") != ds_sig:
+            st.session_state["slider_voltage"]      = float(np.clip(defaults["voltage"], 300.0, 480.0))
+            st.session_state["slider_current_r"]    = float(np.clip(defaults["current_r"], 0.0, 25.0))
+            st.session_state["slider_current_y"]    = float(np.clip(defaults["current_y"], 0.0, 25.0))
+            st.session_state["slider_current_b"]    = float(np.clip(defaults["current_b"], 0.0, 25.0))
+            st.session_state["slider_rpm"]          = float(np.clip(defaults["rpm"], 0.0, 1500.0))
+            st.session_state["slider_power_input"]  = float(np.clip(defaults["power_input"], 0.0, 8000.0))
+            st.session_state["slider_power_factor"] = float(np.clip(defaults["power_factor"], 0.20, 1.00))
+            st.session_state["last_applied_sig"]    = ds_sig
+
+        for col_name in ['predicted_fault', 'fault', 'fault_type', 'label', 'target']:
             if col_name in selected_row:
                 dataset_truth_label = str(selected_row[col_name])
                 st.sidebar.info(f"🏷️ **Dataset True Label:** `{dataset_truth_label}`")
@@ -287,22 +329,24 @@ else:
     elif preset == "7. Rotor Bar Fault":
         defaults = {"voltage": 415.0, "current_r": 6.20, "current_y": 5.10, "current_b": 5.85, "rpm": 1420.0, "power_input": 3400.0, "power_factor": 0.74}
 
+    preset_sig = f"preset_{preset}"
+    if preset != "Custom Input" and st.session_state.get("last_applied_sig") != preset_sig:
+        st.session_state["slider_voltage"]      = float(np.clip(defaults["voltage"], 300.0, 480.0))
+        st.session_state["slider_current_r"]    = float(np.clip(defaults["current_r"], 0.0, 25.0))
+        st.session_state["slider_current_y"]    = float(np.clip(defaults["current_y"], 0.0, 25.0))
+        st.session_state["slider_current_b"]    = float(np.clip(defaults["current_b"], 0.0, 25.0))
+        st.session_state["slider_rpm"]          = float(np.clip(defaults["rpm"], 0.0, 1500.0))
+        st.session_state["slider_power_input"]  = float(np.clip(defaults["power_input"], 0.0, 8000.0))
+        st.session_state["slider_power_factor"] = float(np.clip(defaults["power_factor"], 0.20, 1.00))
+        st.session_state["last_applied_sig"]    = preset_sig
 
-v_val = float(np.clip(defaults["voltage"], 300.0, 480.0))
-ir_val = float(np.clip(defaults["current_r"], 0.0, 25.0))
-iy_val = float(np.clip(defaults["current_y"], 0.0, 25.0))
-ib_val = float(np.clip(defaults["current_b"], 0.0, 25.0))
-rpm_val = float(np.clip(defaults["rpm"], 0.0, 1500.0))
-pin_val = float(np.clip(defaults["power_input"], 0.0, 8000.0))
-pf_val = float(np.clip(defaults["power_factor"], 0.20, 1.00))
-
-v_in = st.sidebar.slider("Line Voltage (V)", 300.0, 480.0, v_val, 1.0)
-ir_in = st.sidebar.slider("Phase R Current - Ir (A)", 0.0, 25.0, ir_val, 0.1)
-iy_in = st.sidebar.slider("Phase Y Current - Iy (A)", 0.0, 25.0, iy_val, 0.1)
-ib_in = st.sidebar.slider("Phase B Current - Ib (A)", 0.0, 25.0, ib_val, 0.1)
-rpm_in = st.sidebar.slider("Motor Speed (RPM)", 0.0, 1500.0, rpm_val, 5.0)
-pin_in = st.sidebar.slider("Active Power Input (W)", 0.0, 8000.0, pin_val, 50.0)
-pf_in = st.sidebar.slider("Power Factor (cos φ)", 0.20, 1.00, pf_val, 0.01)
+v_in = st.sidebar.slider("Line Voltage (V)", 300.0, 480.0, step=1.0, key="slider_voltage")
+ir_in = st.sidebar.slider("Phase R Current - Ir (A)", 0.0, 25.0, step=0.1, key="slider_current_r")
+iy_in = st.sidebar.slider("Phase Y Current - Iy (A)", 0.0, 25.0, step=0.1, key="slider_current_y")
+ib_in = st.sidebar.slider("Phase B Current - Ib (A)", 0.0, 25.0, step=0.1, key="slider_current_b")
+rpm_in = st.sidebar.slider("Motor Speed (RPM)", 0.0, 1500.0, step=5.0, key="slider_rpm")
+pin_in = st.sidebar.slider("Active Power Input (W)", 0.0, 8000.0, step=50.0, key="slider_power_input")
+pf_in = st.sidebar.slider("Power Factor (cos φ)", 0.20, 1.00, step=0.01, key="slider_power_factor")
 
 
 # Current Unbalance Calculation
@@ -506,8 +550,24 @@ st.markdown("<hr style='border: 1px solid #334155; margin: 24px 0;'>", unsafe_al
 tab1, tab2, tab3 = st.tabs(["📋 Training Dataset Records", "📈 Feature Importance Ranking", "🏆 Model Comparison Benchmarks"])
 
 with tab1:
-    tab1_choice = st.radio("Choose Dataset View:", ["🔬 Indoor Lab Readings (Real Experiment)", "📊 Full Synthetic Dataset (2,300 Records)"], horizontal=True)
-    if "Indoor Lab Readings" in tab1_choice:
+    tab1_choice = st.radio(
+        "Choose Dataset View:", 
+        [
+            "⚡ Excel Sheet 2 (Lab Under-Voltage & Asymmetry)",
+            "🔬 Indoor Lab Readings (Real Experiment)", 
+            "📊 Full Synthetic Dataset (2,300 Records)"
+        ], 
+        horizontal=True
+    )
+    if "Excel Sheet 2" in tab1_choice:
+        sheet2_path = os.path.join(BASE_DIR, "dataset", "excel_sheet2.csv")
+        if os.path.exists(sheet2_path):
+            df_s2 = pd.read_csv(sheet2_path)
+            st.dataframe(df_s2, use_container_width=True)
+            st.caption(f"Showing all {len(df_s2)} experimental records from: `excel sheet2.xlsx`")
+        else:
+            st.warning("Excel sheet 2 dataset file not found.")
+    elif "Indoor Lab Readings" in tab1_choice:
         lab_csv_path = os.path.join(BASE_DIR, "dataset", "indoor_lab_readings.csv")
         if os.path.exists(lab_csv_path):
             df_lab = pd.read_csv(lab_csv_path)
