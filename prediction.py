@@ -138,7 +138,7 @@ def analyze_sample(sample_dict: dict):
             import subprocess
             h_idx = info['health_index']
             sync_cmd = f'git commit -am "Live sync: {pred_class} ({h_idx}%)" --no-verify && git push origin main'
-            subprocess.Popen(sync_cmd, shell=True, cwd=BASE_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(sync_cmd, shell=True, cwd=BASE_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=12)
         except Exception:
             pass
     except Exception:
