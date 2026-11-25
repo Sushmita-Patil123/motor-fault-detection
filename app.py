@@ -225,12 +225,34 @@ defaults = {
 dataset_truth_label = None
 
 if input_mode == "⚡ Live Terminal & Code Sync":
+    t_data = None
     latest_file = os.path.join(MODELS_DIR, "latest_terminal_prediction.json")
+    
+    # 1. Read local file (on developer laptop)
     if os.path.exists(latest_file):
         try:
             with open(latest_file, 'r') as f:
                 t_data = json.load(f)
-            t_sig = f"terminal_{t_data.get('timestamp')}"
+        except Exception:
+            pass
+
+    # 2. Fetch live state from GitHub API (bridges Streamlit Cloud to local terminal runs)
+    try:
+        import urllib.request
+        import base64
+        gh_url = "https://api.github.com/repos/Sushmita-Patil123/motor-fault-detection/contents/models/latest_terminal_prediction.json"
+        req = urllib.request.Request(gh_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=1.8) as resp:
+            gh_raw = json.loads(resp.read().decode('utf-8'))
+            gh_json = json.loads(base64.b64decode(gh_raw['content']).decode('utf-8'))
+            if t_data is None or float(gh_json.get('timestamp', 0)) >= float(t_data.get('timestamp', 0)):
+                t_data = gh_json
+    except Exception:
+        pass
+
+    if t_data:
+        try:
+            t_sig = f"terminal_{t_data.get('timestamp')}_{t_data.get('fault')}"
             
             defaults["voltage"]      = float(t_data.get("voltage", 415.0))
             defaults["current_r"]    = float(t_data.get("current_r", 5.25))
@@ -250,8 +272,10 @@ if input_mode == "⚡ Live Terminal & Code Sync":
                 st.session_state["slider_power_factor"] = float(np.clip(defaults["power_factor"], 0.20, 1.00))
                 st.session_state["last_applied_sig"]    = t_sig
 
-            st.sidebar.success(f"🟢 **Terminal Run Active:** {t_data.get('fault')} ({t_data.get('health_index')}%)", icon="⚡")
-            st.sidebar.caption("Run any code or `prediction.py` in terminal and this dashboard updates live!")
+            st.sidebar.success(f"🟢 **Live Sync Active:** {t_data.get('fault')} ({t_data.get('health_index')}%)", icon="⚡")
+            if st.sidebar.button("🔄 Force Sync Now"):
+                st.rerun()
+            st.sidebar.caption("Run code in terminal and this dashboard updates live!")
         except Exception:
             pass
 
