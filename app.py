@@ -236,15 +236,14 @@ if input_mode == "⚡ Live Terminal & Code Sync":
         except Exception:
             pass
 
-    # 2. Fetch live state from GitHub API (bridges Streamlit Cloud to local terminal runs)
+    # 2. Fetch live state from GitHub raw (bridges Streamlit Cloud to local terminal runs without API rate limits)
     try:
         import urllib.request
-        import base64
-        gh_url = "https://api.github.com/repos/Sushmita-Patil123/motor-fault-detection/contents/models/latest_terminal_prediction.json"
-        req = urllib.request.Request(gh_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=1.8) as resp:
-            gh_raw = json.loads(resp.read().decode('utf-8'))
-            gh_json = json.loads(base64.b64decode(gh_raw['content']).decode('utf-8'))
+        import time as _pytime
+        raw_url = f"https://raw.githubusercontent.com/Sushmita-Patil123/motor-fault-detection/main/models/latest_terminal_prediction.json?nocache={int(_pytime.time())}"
+        req = urllib.request.Request(raw_url, headers={'User-Agent': 'Mozilla/5.0', 'Cache-Control': 'no-cache'})
+        with urllib.request.urlopen(req, timeout=2.0) as resp:
+            gh_json = json.loads(resp.read().decode('utf-8'))
             if t_data is None or float(gh_json.get('timestamp', 0)) >= float(t_data.get('timestamp', 0)):
                 t_data = gh_json
     except Exception:
@@ -456,6 +455,39 @@ if sync_ok:
     st.sidebar.success(f"📡 Synced to User UI (Health: {health_idx}%)", icon="✅")
 else:
     st.sidebar.caption("💡 User UI connects via `api.py` on port 8000")
+
+# If running on local developer machine with git, allow 1-click broadcast to cloud
+if os.path.exists(os.path.join(BASE_DIR, ".git")):
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🚀 Push Dashboard State to Cloud UI", help="Publish current developer parameters & prediction to your online Streamlit Cloud User Interface"):
+        try:
+            import time as _ptime
+            import subprocess
+            save_payload = {
+                'voltage': float(input_dict['voltage']),
+                'current_r': float(input_dict['current_r']),
+                'current_y': float(input_dict['current_y']),
+                'current_b': float(input_dict['current_b']),
+                'rpm': float(input_dict['rpm']),
+                'power_input': float(input_dict['power_input']),
+                'power_factor': float(input_dict['power_factor']),
+                'health_index': float(health_idx),
+                'fault': pred_class,
+                'location': diag_info['location'],
+                'action': diag_info['action'],
+                'severity': diag_info['status_badge'],
+                'current_unbalance': round(unbalance_pct, 2),
+                'timestamp': _ptime.time(),
+                'source': 'dashboard'
+            }
+            latest_file = os.path.join(MODELS_DIR, "latest_terminal_prediction.json")
+            with open(latest_file, 'w') as f:
+                json.dump(save_payload, f, indent=2)
+            sync_cmd = f'git commit -am "Live sync from Dashboard: {pred_class} ({health_idx}%)" --no-verify && git push origin main'
+            subprocess.Popen(sync_cmd, shell=True, cwd=BASE_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            st.sidebar.success(f"✅ Published {pred_class} ({health_idx}%) to Cloud UI!")
+        except Exception as e:
+            st.sidebar.error(f"Sync error: {e}")
 
 
 # ==================== ROW 1: STATUS ALARM BANNER ====================
